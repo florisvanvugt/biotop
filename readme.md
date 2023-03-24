@@ -2,6 +2,14 @@
 
 A simple GUI for human-assisted semiautomatic ECG analysis.
 
+**Purpose** ECG analysis of real-world data can be tricky, especially when there are lots of artefacts.
+Automated pipelines exist but the results can often not be inspected, and not manually adjusted.
+
+The current script allows you to import, view and explore ECG data. 
+You can run automated peak detection which you can then inspect and modify manually.
+The results are saved in a JSON file format.
+
+
 ## Prerequisites
 
 * Python 3.X 
@@ -30,4 +38,10 @@ Basic GUI controls
 * Mouse right button single click : Remove peak
 * Mouse middle button click : Insert marker for invalid region
 * Mouse middle button double click : Remove invalid region
+
+
+
+## File format
+
+This uses a custom file format based on the HDF5 framework, explained in `specification_hdf5.md`
 
