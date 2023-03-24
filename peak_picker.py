@@ -218,20 +218,22 @@ def auto_detect_peaks():
 
 
 def do_import_biopac_peaks(f):
-    import read_biopac
-    peakdata = read_biopac.read_acq_ecg_peaks(f)
-    ts = peakdata['Time']
-    gb['peaks']= [
-        {
-            'i':int(round(t*biodata.SR)),
-            't':t,
-            'valid':True,
-            'source':'auto',
-            'edited':False
-        } for t in ts
-    ]
-    for p in gb['peaks']: p['y']=ecg[p['i']] if p['i']<ecg.shape[0] else np.nan
-    
+    try:
+        import read_biopac
+        peakdata = read_biopac.read_acq_ecg_peaks(f)
+        ts = peakdata['Time']
+        gb['peaks']= [
+            {
+                'i':int(round(t*biodata.SR)),
+                't':t,
+                'valid':True,
+                'source':'auto',
+                'edited':False
+            } for t in ts
+        ]
+        for p in gb['peaks']: p['y']=ecg[p['i']] if p['i']<ecg.shape[0] else np.nan
+    except:
+        print("Something didn't work.")
 
     
 
@@ -266,8 +268,6 @@ def import_biopac_peaks():
 ## ECG Preprocessing
 ecg_target = gb['ecg-prep-column']
 preprocess_ecg.preprocess(biodata,gb,[gb['plot.column']])
-#prep = biodata.preprocessed[ecg_target]
-#ecg = biodata.bio[ecg_target]
 if 'peaks' not in gb:
     gb['peaks']=[]
 
@@ -333,8 +333,6 @@ def check_window_zoom(t):
         # First zoom in
         update_window(.8*PEAK_EDIT_MAX_WINDOW_T/gb['WINDOW_T'],t)
         
-        #tkinter.messagebox.showerror(title="Too far zoomed out",
-        #                             message="You can't edit peaks at this zoom level. You need to zoom in further to be able to reliably edit peaks.")
         return False
 
     return True
@@ -416,12 +414,6 @@ def on_click(event):
         dt = t-peak['t']
         if abs(dt)<PEAK_SNAP_T:
             del gb['peaks'][i]
-            #if peak['source']=='manual':
-            #    del gb['peaks'][i]
-            #else:
-            #    peak['valid']=False
-            #    peak['source']='manual.removed'
-            #    peak['edited']=True
 
         redraw_all()
 
@@ -504,13 +496,8 @@ def on_click(event):
 
 
 
-# pack_toolbar=False will make it easier to use a layout manager later on.
-#toolbar = NavigationToolbar2Tk(canvas, root, pack_toolbar=False)
-#toolbar.update()
-
 
 def process_key_events(event):
-    #print(f"you pressed {event.key}")    
     if event.key=='left':
         back_in_time()
     if event.key=='right':
@@ -519,7 +506,6 @@ def process_key_events(event):
 
 
 def process_scroll_events(event):
-    #print(f"you pressed {event.key}")
 
     if 'ctrl' in event.modifiers:
 
@@ -593,12 +579,13 @@ def get_valid_RR_intervals(trange=None):
 
 
 def strip_sample(pks):
+    # Strip information from the peaks objects that we can reproduce easily when we reload
     ret = []
     for p in pks:
         pn = p.copy()
         del pn['i']
         del pn['y']
-        ret.append(pn) #del p['i']
+        ret.append(pn) 
     return ret
 
 
@@ -632,9 +619,6 @@ def save_files():
     
 
 def on_closing():
-    # Serializing json
-    #print(gb)
-
     save_files()
     root.destroy()
     
@@ -747,6 +731,12 @@ def is_in_invalid(t):
     return False
 
 
+
+
+TARGET_PLOT_POINTS = 2000
+# how many points to actually plot in the current window (approximately)
+# If the truly available data is more than this, we downsample just for display purposes
+
 def redraw():
     
     # Determine drawrange
@@ -792,9 +782,23 @@ def redraw():
             elif peak['source']=='candidate':
                 ax.axvline(peak['t'],linestyle='--',color='gray',zorder=-99,lw=.5)
                 
-                
-    ax.plot(plot_t[tsels],
-            ecg[tsels],'-',
+    # Plot the actual signal
+    x = plot_t[tsels]
+    y = ecg[tsels]
+
+    nplot = sum(tsels) ## the number of samples we'd plot if we don't do sub-sampling
+    #print("Plotting {}".format(nplot))
+    
+    factor = int(nplot/TARGET_PLOT_POINTS)
+    if factor>1:
+        x,y = x[::factor],y[::factor]
+
+    pch = '-'
+    if nplot<100:
+        pch = 'o-'
+        
+    ax.plot(x,y,
+            pch,
             label='cleaned',
             zorder=-10,
             color=COLORS.get(c,"#9b0000"))
@@ -967,12 +971,12 @@ def make_erp_plot():
     
     b = tkinter.Button(master=bf, text="Make template", command=capture_erp)
     b.grid(column=0,row=0,padx=10, pady=10)
-    b = tkinter.Button(master=bf, text="Search template", command=search_template)
-    b.grid(column=1,row=0,padx=10, pady=10)
-    b = tkinter.Button(master=bf, text="Accept candidates", command=accept_search)
-    b.grid(column=2,row=0,padx=10, pady=10)
+    b = tkinter.Button(master=bf, text="Search", command=search_template)
+    b.grid(column=1,row=0,padx=0, pady=10)
+    b = tkinter.Button(master=bf, text="Accept", command=accept_search)
+    b.grid(column=2,row=0,padx=0, pady=10)
     b = tkinter.Button(master=bf, text="Clear", command=clear_candidates)
-    b.grid(column=3,row=0,padx=10, pady=10)
+    b.grid(column=3,row=0,padx=0, pady=10)
 
     redraw_erp()
 
@@ -1152,7 +1156,7 @@ def search_template():
     for p in new_peaks:
         p['i']=int(round(p['t']*SR))
         p['y']=ecg_full[p['i']]
-        #print(p)
+
         if not is_in_invalid(p['t']):
             _,nextpeak = find_closest_peak(p['t'])
             dt = p['t']-nextpeak['t']
