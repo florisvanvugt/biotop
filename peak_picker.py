@@ -8,8 +8,6 @@ from tkinter import Toplevel
 import tkinter.messagebox
 from tkinter.messagebox import askyesno
 
-
-
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 
@@ -19,8 +17,6 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
 
-#import preprocess_ecg_neurokit as preprocess_ecg
-#import preprocess_ecg_heartpy as preprocess_ecg
 import preprocess_ecg_detectors as preprocess_ecg
 
 import numpy as np
@@ -33,8 +29,6 @@ import json
 
 import sys
 
-##import audio
-##import smooth
 from misc import does_overlap
 
 
@@ -55,8 +49,6 @@ gb['peaks']= []
 gb['cursor.t']=0
 
 
-    
-
 
 
 ##
@@ -72,8 +64,6 @@ else:
 
     filetypes = (
         ('HDF5 dataset', '*.hdf5'),
-        #('Bionomadix data files', '*.acq'),
-        #('B3 data files', '*.csv'),
         ('All files', '*.*')
     )
 
@@ -92,15 +82,6 @@ if not os.path.exists(fname):
     sys.exit(-1)
     
 
-##if fname.endswith('.csv'):
-##   PARADIGM = 'B3'
-##if fname.endswith('.acq'):
-##    PARADIGM = 'Bionomadix'
-
-##with open('fileconfig_{}.json'.format(PARADIGM),'r') as f:
-##    conf=json.loads(f.read())
-##    for c in conf: gb[c]=conf[c]
-
 
 
 ###
@@ -110,13 +91,12 @@ print("Opening file {}".format(fname))
 
 import read_h5py as read_file
 
-##if PARADIGM=="Bionomadix":
-##    import read_biopac as read_file
-##else:
-##    import read_csv as read_file
-
 biodata       = read_file.BioData(fname)
+
+print(biodata.summary())
+
 gb['biodata'] = biodata
+gb['SR']      = biodata.SR
 gb['bio']     = biodata.bio
 
 
@@ -144,11 +124,8 @@ else:
 
     
 
-##SR = 250 # sampling rate in Hz
 bio = biodata.bio
-biodata.SR = (bio['t'].shape[0]/max(bio['t']))
 print("Effective sampling rate hovers around {} Hz".format(biodata.SR))
-
 bio['sample.t']=np.arange(bio['t'].shape[0])/biodata.SR
 
 
@@ -176,6 +153,10 @@ gb['mark_out'] =None
 
 
 def do_auto_detect_peaks():
+    ecg_target = gb['ecg-prep-column']
+    ecg = biodata.bio[ecg_target] # gb['ecg_clean']
+    
+    peaks = preprocess_ecg.peak_detect(ecg,gb['SR'])
     gb['peaks']= [
         {
             'i':samp,
@@ -184,7 +165,7 @@ def do_auto_detect_peaks():
             'source':'auto',
             'edited':False,
             'y':ecg[samp]
-        } for samp in prep['ecg_peaks']
+        } for samp in peaks
     ]
 
 
@@ -285,8 +266,8 @@ def import_biopac_peaks():
 ## ECG Preprocessing
 ecg_target = gb['ecg-prep-column']
 preprocess_ecg.preprocess(biodata,gb,[gb['plot.column']])
-prep = biodata.preprocessed[ecg_target]
-ecg = biodata.bio[ecg_target]
+#prep = biodata.preprocessed[ecg_target]
+#ecg = biodata.bio[ecg_target]
 if 'peaks' not in gb:
     gb['peaks']=[]
 
@@ -790,7 +771,7 @@ def redraw():
     ecg = biodata.bio[ecg_target] # gb['ecg_clean']
     ##print(ecg.shape)
     
-    prep = biodata.preprocessed[ecg_target]
+    #prep = biodata.preprocessed[ecg_target]
     tsels = (gb['bio']['t']>=tmin) & (gb['bio']['t']<=tmax)
     plot_t = gb['bio']['t']
 
@@ -1019,7 +1000,7 @@ def redraw_erp():
     ecg_target = gb['ecg-prep-column']
     ecg = biodata.bio[ecg_target] # gb['ecg_clean']
     
-    prep = biodata.preprocessed[ecg_target]
+    #prep = biodata.preprocessed[ecg_target]
     plot_t = biodata.bio['t']
 
     ax.axhline(y=0,lw=.5,color='gray')

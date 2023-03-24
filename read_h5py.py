@@ -56,7 +56,7 @@ class BioData:
                 nsamp = ch.size
                 frq = ch.attrs['SR']
                 dur = nsamp/frq
-                ret += "∟ channel {} [ modality {} ] {} samples @ {:.1f} Hz; duration {:.1f} s\n".format(
+                ret += "∟ channel {} [ modality {} ] {} samples @ {:.1f} Hz => duration {:.1f} s\n".format(
                     chn,
                     ch.attrs['modality'],
                     nsamp,
