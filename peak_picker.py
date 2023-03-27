@@ -104,6 +104,7 @@ gb['bio']     = biodata.bio
 
 import misc
 fields = biodata.get_ecg_channels()
+fields.sort()
 if len(fields)>1:
 
     if len(sys.argv)>2:
