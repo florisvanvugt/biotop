@@ -10,6 +10,13 @@ You can run automated peak detection which you can then inspect and modify manua
 The results are saved in a JSON file format.
 
 
+ <iframe width="420" height="315"
+src="https://youtu.be/o-oGjbLTjL4">
+</iframe> 
+
+
+
+
 ## Prerequisites
 
 * Python 3.X 
