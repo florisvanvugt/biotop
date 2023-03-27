@@ -347,10 +347,37 @@ def update_cursor():
     gb['canvas'].draw()
     
 
+
+
+## If we "snap" (hold shift while browsing), we snap
+## the cursor to the closest maximum.
+## Here we pick the window around the real cursor location that
+## we should look in to find the peak to snap to.
+SHIFT_SNAP_DT = .1
+    
+def snap_to_closest_peak(t):
+    # Find the local maximum
+    tmin,tmax = t-SHIFT_SNAP_DT,t+SHIFT_SNAP_DT
+    tsels = (gb['bio']['t']>=tmin) & (gb['bio']['t']<=tmax)
+
+    ecg_target = gb['ecg-prep-column']
+    ecg = biodata.bio[ecg_target][tsels] # gb['ecg_clean']
+    ecg_t = gb['bio']['t'][tsels]
+    
+    peak_t = ecg_t[np.argmax(ecg)]
+    if peak_t:
+        return peak_t
+    else:
+        return t
+    
     
 def on_move(event):
+        
     if event.xdata:
-        gb['cursor.t']=event.xdata
+        t = event.xdata
+        if 'shift' in event.modifiers:
+            t = snap_to_closest_peak(event.xdata)
+        gb['cursor.t']=t
         update_cursor()
     
 
@@ -362,7 +389,9 @@ def on_click(event):
     # Set a new mark
     t = event.xdata
     if not t: return
-    
+
+    if 'shift' in event.modifiers:
+        t = snap_to_closest_peak(event.xdata)
 
     if event.button==MouseButton.LEFT and event.dblclick:
 
