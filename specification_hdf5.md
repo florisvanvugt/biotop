@@ -12,6 +12,7 @@ Store datasets as follows:
 Required attributes for each dataset:
 * `SR` sampling rate in Hz.
 * `modality` the measurement modality (e.g. `ecg`, `ppg`, etc.) in lower case.
+* `units` is the measurement units (e.g. `mV`, `microsiemens` or whatever), in lower case.
 * `participant` the participant (redundant but hey)
 
 

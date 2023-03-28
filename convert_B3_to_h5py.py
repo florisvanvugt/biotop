@@ -83,6 +83,7 @@ for col in col_info:
     dset.attrs['SR']=SR
     dset.attrs['participant']=p
     dset.attrs['modality']=modality
+    dset.attrs['units']='arbitrary'
 
     
 hf.close()

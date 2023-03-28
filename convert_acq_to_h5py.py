@@ -82,6 +82,7 @@ for ch,info in zip(data.channels,channel_contents):
     dset.attrs['SR']=ch.samples_per_second/SUBSAMPLING_FACTOR
     dset.attrs['participant']=p
     dset.attrs['modality']=modality
+    dset.attrs['units']=ch.units
 
     
 hf.close()
