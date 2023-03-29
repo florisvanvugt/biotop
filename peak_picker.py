@@ -89,9 +89,9 @@ if not os.path.exists(fname):
 ###
 print("Opening file {}".format(fname))
 
-import read_h5py as read_file
+import read_h5py
 
-biodata       = read_file.BioData(fname)
+biodata       = read_h5py.read(fname)
 
 print(biodata.summary())
 

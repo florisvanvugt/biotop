@@ -42,7 +42,9 @@ class BioData:
 
 
     def get_participants(self):
-        return self.participants
+        part = self.participants
+        part.sort()
+        return part
 
 
 
@@ -56,11 +58,23 @@ class BioData:
                 nsamp = ch.size
                 frq = ch.attrs['SR']
                 dur = nsamp/frq
-                ret += "∟ channel {} [ modality {} ] {} samples @ {:.1f} Hz => duration {:.1f} s\n".format(
+                ret += "∟ channel {} [ modality {} in {} ] {} samples @ {:.1f} Hz = {:.1f} s\n".format(
                     chn,
                     ch.attrs['modality'],
+                    ch.attrs.get('units','a.u.'),
                     nsamp,
                     frq,
                     dur
                 )
         return (ret)
+
+
+
+
+
+def read(fname):
+    bio = BioData(fname)
+    return bio
+
+
+
