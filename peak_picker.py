@@ -47,7 +47,8 @@ gb['qc']={}
 gb['invalid']= []
 gb['peaks']= []
 gb['cursor.t']=0
-
+gb['cursor.snap.t']=0
+gb['cursor.snap']=None
 
 
 
@@ -344,7 +345,15 @@ def update_cursor():
     x = gb['cursor.t']
     gb['cursor'].set_data([x, x], [0, 1])
     gb['cursor.intvl'].set_data([x, x], [0, 1])
+
+    x = gb['cursor.snap.t']
+    if gb['cursor.snap']:
+        if x:
+            gb['cursor.snap'].set_data([x], [get_signal_at_t(x)])
+
     gb['canvas'].draw()
+
+
     
 
 
@@ -369,15 +378,28 @@ def snap_to_closest_peak(t):
         return peak_t
     else:
         return t
+
+
+def get_signal_at_t(t):
+    # Return the ECG signal value closest to time t
+    if not t: return None
+    samp = int(round(t*biodata.SR)) # getting the closest sample
+    ecg_target = gb['ecg-prep-column']
+    ecg = biodata.bio[ecg_target] # gb['ecg_clean']
+    return ecg[samp]
+
+
     
     
 def on_move(event):
         
     if event.xdata:
         t = event.xdata
-        if 'shift' in event.modifiers:
-            t = snap_to_closest_peak(event.xdata)
         gb['cursor.t']=t
+        if 'shift' in event.modifiers:
+            gb['cursor.snap.t']=snap_to_closest_peak(event.xdata)
+        else:
+            gb['cursor.snap.t']=None
         update_cursor()
     
 
@@ -795,8 +817,13 @@ def redraw():
     tsels = (gb['bio']['t']>=tmin) & (gb['bio']['t']<=tmax)
     plot_t = gb['bio']['t']
 
-    gb['cursor']=ax.axvline(x=gb['cursor.t'],lw=1,color='blue',alpha=.9,zorder=99999)
-
+    gb['cursor']     =ax.axvline(x=gb['cursor.t'],lw=1,color='blue',alpha=.9,zorder=99999)
+    gb['cursor.snap']=ax.plot([gb['cursor.snap.t']],
+                              [get_signal_at_t(gb['cursor.snap.t'])],
+                              marker='o',markersize=5,markerfacecolor='none',
+                              markeredgecolor='darkgreen',alpha=.9,zorder=99999)[0]
+    #print(gb['cursor.snap'])
+        
     for (signal,t_start,t_end) in gb['invalid']:
         if does_overlap((t_start,t_end),drawrange):
             i = ax.axvspan(t_start, t_end,facecolor='.85', alpha=0.9,zorder=99)
@@ -849,6 +876,7 @@ def redraw():
                     zorder=9999)
 
 
+            
 
     united = get_valid_RR_intervals((tmin,tmax))
     #united = [ (t,i) for (t,i) in united if not np.isnan(i) ]
