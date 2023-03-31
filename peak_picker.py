@@ -79,8 +79,16 @@ if not fname:
 
 
 if not os.path.exists(fname):
-    print("File {} does not seem to exist. Exiting now.".format(fname))
-    sys.exit(-1)
+
+    ok = False
+    for addon in ['.hdf5','hdf5']:
+        if os.path.exists(fname+addon):
+            fname = fname+addon
+            ok = True
+            continue
+    if not ok:
+        print("File {} does not seem to exist. Exiting now.".format(fname))
+        sys.exit(-1)
     
 
 
@@ -647,8 +655,9 @@ def save_files():
     ## Prepare for writing
     pc = gb['plot.column']
     inv = gb['qc'].get('invalid',{})
-    inv[pc]=curate_invalid(gb['invalid']) # just to make sure
-    gb['qc']['invalid']=inv
+    # Round the time points, and curate them, and then insert them into the global object
+    inv[pc] = [ (s,round(t0,4),round(t1,4)) for (s,t0,t1) in curate_invalid(gb['invalid']) ]
+    gb['qc']['invalid']= inv
 
     pks = gb['qc'].get('peaks',{})
     pks[pc]=strip_sample(gb['peaks']) # just to make sure
@@ -1170,6 +1179,7 @@ def search_template():
     ## Ok, given an ERP template, can we find it in the current window?
     if not ('erp.template' in gb and len(gb['erp.template'])):
         print("No template defined.")
+        tkinter.messagebox.showinfo("No template","No template defined")
         return
 
     ## Eliminate current candidates
@@ -1195,7 +1205,7 @@ def search_template():
     corr = scipy.signal.correlate(ecgnorm,meanerp,mode='valid')
     mn = np.mean(corr)
     mx = np.max(corr)
-    print("Correlation values M={} STD={} MIN={} MAX={}".format(mn,np.std(corr),np.min(corr),np.max(corr)))
+    print("Correlation values M={:.3f} STD={:.3f} MIN={:.3f} MAX={:.3f}".format(mn,np.std(corr),np.min(corr),np.max(corr)))
     pks,_ = scipy.signal.find_peaks(
         corr,
         height=mn+(mx-mn)*.5,
@@ -1308,6 +1318,16 @@ def redraw_poincare():
     
     ax.set_xlabel('RR intvl n (s)')
     ax.set_ylabel('RR intvl n+1 (s)')
+
+    # Now draw a x=y reference line
+    lims = [
+        np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
+        np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
+    ]
+    
+    # now plot both limits against eachother
+    ax.plot(lims, lims, '-', color='gray',alpha=0.75, zorder=0, lw=.5)
+    ax.set_aspect('equal')
     
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
