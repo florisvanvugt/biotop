@@ -556,14 +556,36 @@ def on_click(event):
 
 
 
+# When toggling the zoom, toggle between micro and macro window size
+TOGGLE_WINDOW_SIZES = [ 1.5, 30 ]
+            
+
+def toggle_zoom():
+    # Switch between zoom modes: micro and macro, to allow quick zooming
+    wint = gb['WINDOW_T']
+    sizedist = [ np.abs(np.log(wint/t)) for t in TOGGLE_WINDOW_SIZES ]
+    target = TOGGLE_WINDOW_SIZES[np.argmax(sizedist)]
+    if False:
+        print("Toggling!")
+        print(wint)
+        print(sizedist)
+        print(target)
+    update_window(target/wint,gb['cursor.t'])
+    
+
+
 
 def process_key_events(event):
     if event.key=='left':
         back_in_time()
     if event.key=='right':
         forward_in_time()
-        
 
+    if event.key=='z':
+        toggle_zoom()
+
+
+        
 
 def process_scroll_events(event):
 

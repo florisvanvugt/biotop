@@ -9,14 +9,31 @@
 ## in order, what each channel represents.
 
 
+from tkinter import filedialog as fd
 
 import sys
 if len(sys.argv)>1:
     fname = sys.argv[1]
 else:
+
+    filetypes = (
+        ('Acqknowledge dataset', '*.acq'),
+        ('All files', '*.*')
+    )
+
+    fname = fd.askopenfilename(
+        title='Select your recording',
+        initialdir='.',
+        filetypes=filetypes)
+
+
+if not fname:
     print("You need to indicate a file to convert.")
     sys.exit(-1)
 
+
+
+    
 
 src = fname
 
@@ -66,7 +83,7 @@ for p in ['a','b']:
     dat = hf.create_group(p)
 
 
-SUBSAMPLING_FACTOR = 4
+SUBSAMPLING_FACTOR = 1
     
 assert len(data.channels)==len(channel_contents)
 for ch,info in zip(data.channels,channel_contents):

@@ -43,7 +43,7 @@ Basic GUI controls
 * Mouse right button single click : Remove peak
 * Mouse middle button click : Insert marker for invalid region
 * Mouse middle button double click : Remove invalid region
-
+* Keyboard `z` toggles between micro and macro zoom (make sure the window has focus)
 
 
 ## File format
