@@ -64,8 +64,8 @@ def does_overlap(intv1,intv2):
 
 
 
-from tkinter import Tk, Text, TOP, BOTH, X, N, LEFT, RIGHT
-from tkinter.ttk import Frame, Label, Entry, Button
+#from tkinter import Tk, Text, TOP, BOTH, X, N, LEFT, RIGHT
+#from tkinter.ttk import Frame, Label, Entry, Button
 
 # Good habit to put your GUI in a class to make it self-contained
 class SimpleDialog(Frame):
