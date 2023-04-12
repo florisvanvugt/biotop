@@ -22,7 +22,7 @@ class BioData:
         self.channels_by_type = {}
         for p in self.participants:
             for ch in self.hf[p].keys():
-                nm = "{}-{}".format(p,ch)
+                nm = "{}/{}".format(p,ch)
                 dset = self.hf[p][ch]
                 if not self.SR: self.SR=dset.attrs['SR']
                 assert self.SR==dset.attrs['SR']
