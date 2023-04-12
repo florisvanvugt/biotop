@@ -314,7 +314,7 @@ for p in gb['peaks']:
 gb['invalid'] = curate_invalid(gb['invalid'])
 
     
-SUMMARY_OUT = '{}_{}_summary.csv'.format(fname,gb['plot.column'])
+SUMMARY_OUT = '{}_{}_summary.csv'.format(fname,gb['plot.column']).replace('/','_')
 
         
     
@@ -696,8 +696,8 @@ def save_files():
 
     out = pd.DataFrame(rrs)
     out['i']=range(len(rrs))
+    print("Saving to {}".format(SUMMARY_OUT))
     out.to_csv(SUMMARY_OUT,index=False, float_format='%.5f')
-    print("Saved {}".format(SUMMARY_OUT))
         
     
 
