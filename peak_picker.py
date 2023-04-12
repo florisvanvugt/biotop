@@ -314,7 +314,7 @@ for p in gb['peaks']:
 gb['invalid'] = curate_invalid(gb['invalid'])
 
     
-SUMMARY_OUT = '{}_{}_summary.csv'.format(fname,gb['plot.column']).replace('/','_')
+SUMMARY_OUT = '{}_{}_summary.csv'.format(fname,gb['plot.column'].replace('/','_'))
 
         
     
@@ -691,13 +691,14 @@ def save_files():
         f.write(json_obj)
 
     ## Also create a more succinct report that we can use to calculate HRV
-    united = get_valid_RR_intervals()
-    rrs = [ {"t":t,"rr":i} for (t,i) in united ]
-
-    out = pd.DataFrame(rrs)
-    out['i']=range(len(rrs))
-    print("Saving to {}".format(SUMMARY_OUT))
-    out.to_csv(SUMMARY_OUT,index=False, float_format='%.5f')
+    if True : # technically not needed because we recreate this info in another script
+        united = get_valid_RR_intervals()
+        rrs = [ {"t":t,"rr":i} for (t,i) in united ]
+        
+        out = pd.DataFrame(rrs)
+        out['i']=range(len(rrs))
+        print("Saving to {}".format(SUMMARY_OUT))
+        out.to_csv(SUMMARY_OUT,index=False, float_format='%.5f')
         
     
 
