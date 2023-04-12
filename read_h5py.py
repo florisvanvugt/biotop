@@ -16,8 +16,11 @@ class BioData:
         bio = {}
 
         self.SR = None
+        self.date = ''
         if 'participants' not in self.hf.attrs:
             print("# Error, missing participants attribute in the root.")
+        if 'date' in self.hf.attrs:
+            self.date = self.hf.attrs['date']
         self.participants = self.hf.attrs['participants']
         self.channels_by_type = {}
         for p in self.participants:
@@ -54,8 +57,10 @@ class BioData:
 
     def summary(self):
         ret = "Summary of {}\n".format(self.fname)
+        if self.date:
+            ret += '[ date : {} ]\n'.format(self.date)
         for p in self.participants:
-            ret += "\nParticipant {}\n".format(p)
+            ret += "\nParticipant '{}'\n".format(p)
             part = self.hf[p]
             for chn in part:
                 ch = part[chn]

@@ -51,4 +51,101 @@ def does_overlap(intv1,intv2):
     overlapmax = min([b1,b2])
     return overlapmin<=overlapmax
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+from tkinter import Tk, Text, TOP, BOTH, X, N, LEFT, RIGHT
+from tkinter.ttk import Frame, Label, Entry, Button
+
+# Good habit to put your GUI in a class to make it self-contained
+class SimpleDialog(Frame):
+
+    def __init__(self):
+        super().__init__()
+        # self allow the variable to be used anywhere in the class
+        self.output1 = ""
+        self.output2 = ""
+        self.initUI()
+
+    def initUI(self):
+
+        self.master.title("Simple Dialog")
+        self.pack(fill=BOTH, expand=True)
+
+        frame1 = Frame(self)
+        frame1.pack(fill=X)
+
+        lbl1 = Label(frame1, text="Participant A")
+        lbl1.pack(side=LEFT, padx=5, pady=10)
+
+        self.entry1 = Entry(frame1, textvariable=self.output1)
+        self.entry1.pack(fill=X, padx=5, expand=True)
+
+        frame2 = Frame(self)
+        frame2.pack(fill=X)
+
+        lbl2 = Label(frame2, text="Participant B")
+        lbl2.pack(side=LEFT, padx=5, pady=10)
+
+        self.entry2 = Entry(frame2)
+        self.entry2.pack(fill=X, padx=5, expand=True)
+
+        frame3 = Frame(self)
+        frame3.pack(fill=X)
+
+        # Command tells the form what to do when the button is clicked
+        btn = Button(frame3, text="Submit", command=self.onSubmit)
+        btn.pack(padx=5, pady=10)
+
+    def onSubmit(self):
+        self.output1 = self.entry1.get().strip()
+        self.output2 = self.entry2.get().strip()
+        self.quit()
+
+
+def run_dual_input():
+
+    # This part triggers the dialog
+    root = Tk()
+    root.geometry("250x150+300+300")
+    app = SimpleDialog()
+    root.mainloop()
+    # Here we can act on the form components or
+    # better yet, copy the output to a new variable
+    user_input = (app.output1, app.output2)
+    # Get rid of the error message if the user clicks the
+    # close icon instead of the submit button
+    # Any component of the dialog will no longer be available
+    # past this point
+    try:
+        root.destroy()
+    except:
+        pass
+    # To use data outside of function
+    # Can either be used in __main__
+    # or by external script depending on
+    # what calls main()
+    return user_input
+
+
+
+
+
+
+
+
+
+
+
+
     

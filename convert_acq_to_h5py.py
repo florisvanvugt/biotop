@@ -54,10 +54,21 @@ for ch in data.channels:
     print(" {}".format(ch.name))
 print()
 
+dt = data.earliest_marker_created_at.strftime("%m/%d/%Y %H:%M:%S %Z%z")
+
+
+
+import misc
+inpA,inpB = misc.run_dual_input()
+if len(inpA) and len(inpB):
+    print("Got user names {} and {}".format(inpA,inpB))
+else:
+    print("No participant IDs provided.")
+    sys.exit(-1)
 
 
 # EDIT THIS FOR EACH CONVERSION
-participant2id = {"a":"P101","b":"P102"}
+participant2id = {"a":inpA.strip(),"b":inpB.strip()}
 # This indicates which participant will be considered a and b in the list below.
 # Do not change "a" and "b" below, they are just placeholders for the two participants
 
@@ -90,6 +101,7 @@ print()
 hname = "{}.hdf5".format(src.replace('.acq',''))
 hf = h5py.File(hname, "w")
 hf.attrs['participants']=participants # set participants attribute
+hf.attrs['date']=dt
 for p in ['a','b']:
     dat = hf.create_group(participant2id[p])
 
