@@ -41,7 +41,10 @@ src = fname
 import bioread
 import json
 import h5py
+import os
 
+
+print("\n\nSource file: {}".format(os.path.basename(src)))
 
 # This file is included in bioread
 data = bioread.read_file(src)
@@ -52,7 +55,15 @@ for ch in data.channels:
 print()
 
 
+
+# EDIT THIS FOR EACH CONVERSION
+participant2id = {"a":"P101","b":"P102"}
+# This indicates which participant will be considered a and b in the list below.
+# Do not change "a" and "b" below, they are just placeholders for the two participants
+
+
 # Channel renaming
+# CHECK that this is correct
 channel_contents = [
     {'person':'a','modality':'resp'},
     {'person':'a','modality':'ppg'},
@@ -63,13 +74,13 @@ channel_contents = [
     {'person':'b','modality':'ecg'},
     {'person':'b','modality':'eda'},
 ]
-participants = list(set([ ch['person'] for ch in channel_contents ]))
+participants = list(set([ participant2id[ch['person']] for ch in channel_contents ]))
 
     
 print()
 print("Channels according to our labels:")
 for ch in channel_contents:
-    print(" {} {}".format(*ch.values()))
+    print(" {} {}".format(participant2id[ch['person']],ch['modality']))
 print()
 print()
 
@@ -80,7 +91,7 @@ hname = "{}.hdf5".format(src.replace('.acq',''))
 hf = h5py.File(hname, "w")
 hf.attrs['participants']=participants # set participants attribute
 for p in ['a','b']:
-    dat = hf.create_group(p)
+    dat = hf.create_group(participant2id[p])
 
 
 SUBSAMPLING_FACTOR = 1
@@ -88,7 +99,7 @@ SUBSAMPLING_FACTOR = 1
 assert len(data.channels)==len(channel_contents)
 for ch,info in zip(data.channels,channel_contents):
     modality = info['modality']
-    p = info['person']
+    p = participant2id[info['person']]
     rawdata = ch.data[:]
     # If we do subsampling...
     if SUBSAMPLING_FACTOR:
@@ -104,3 +115,12 @@ for ch,info in zip(data.channels,channel_contents):
     
 hf.close()
 print("Written to {}".format(hname))
+
+
+
+
+
+import read_h5py
+
+b = read_h5py.read(hname)
+print(b.summary())
