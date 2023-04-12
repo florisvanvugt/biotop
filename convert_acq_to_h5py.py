@@ -94,7 +94,7 @@ for p in ['a','b']:
     dat = hf.create_group(participant2id[p])
 
 
-SUBSAMPLING_FACTOR = None
+SUBSAMPLING_FACTOR = 1 # if we want to do subsampling, change the factor here to other than 1
     
 assert len(data.channels)==len(channel_contents)
 for ch,info in zip(data.channels,channel_contents):

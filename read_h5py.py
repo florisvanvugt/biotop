@@ -24,7 +24,11 @@ class BioData:
             for ch in self.hf[p].keys():
                 nm = "{}/{}".format(p,ch)
                 dset = self.hf[p][ch]
-                if not self.SR: self.SR=dset.attrs['SR']
+                if self.SR:
+                    if dset.attrs['SR']!=self.SR:
+                        print("## ERROR, sampling rate {} differs from that of other channels. Not currently implemented.")
+                else:
+                    self.SR=dset.attrs['SR']
                 assert self.SR==dset.attrs['SR']
                 bio[nm]=dset ##np.array(dset[:]) # convert into numpy array just to be sure
                 mod = dset.attrs['modality']
