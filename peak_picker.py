@@ -691,7 +691,7 @@ def save_files():
         f.write(json_obj)
 
     ## Also create a more succinct report that we can use to calculate HRV
-    if True : # technically not needed because we recreate this info in another script
+    if False : # technically not needed because we recreate this info in another script
         united = get_valid_RR_intervals()
         rrs = [ {"t":t,"rr":i} for (t,i) in united ]
         

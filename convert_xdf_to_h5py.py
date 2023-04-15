@@ -54,13 +54,48 @@ streams, header = pyxdf.load_xdf(fname)
 print("Channels: ")
 for s in streams:
     i = s['info']
-    print(" {} {}".format(i['name'],i['type']))
+    print(" {} {}".format(i['name'][0],i['type'][0]))
 print()
 
-dt = header['info']['datetime']
+dt = header['info']['datetime'][0]
 
 
-participants = ['a']
+participants = [ s['info']['name'][0] for s in streams ]
+participants.sort()
+
+
+## One issue is that in XDF, streams can start at different moments in time.
+## Here we need to align them all to a common offset.
+start_ts = [ min(s['time_stamps']) for s in streams ]
+ONSET_T = max(start_ts)
+
+n_samp = [ sum(s['time_stamps']>=ONSET_T) for s in streams ]
+print(n_samp)
+N_SAMP = min(n_samp) # take the smallest common time portion
+
+print("---------- TIMING ----------")
+print("Joint start t={}".format(ONSET_T))
+print("Stream onset deltas (should not be too great)")
+print([ t-ONSET_T for t in start_ts ])
+print("Largest common duration: {} samples".format(N_SAMP))
+print("Duration mismatches (proportion of common duration)")
+print(" ".join([ "{:.4f}".format(n/N_SAMP) for n in n_samp ]))
+print()
+
+print("---------- SAMPLING RATES ----------")
+nominal_sr = [ float(s['info']['nominal_srate'][0]) for s in streams ]
+eff_sr     = [ float(s['info']['effective_srate']) for s in streams ]
+print("Nominal sampling rates:")
+print(" ".join([ "{:.2f}".format(n) for n in nominal_sr ]))
+print("Effective sampling rates:")
+print(" ".join([ "{:.2f}".format(n) for n in eff_sr ]))
+print()
+
+
+## TODO: I want to do quality assurance checks at some point too.
+## Ensuring that there is not too large a gap between samples,
+## that there is no 
+
 
 
 ## Create the HDF5 version
@@ -78,12 +113,15 @@ for s in streams:
     if tp!='ecg': continue
     
     modality = tp
-    p = participants[0]
+    p = info['name'][0]
 
-    rawdata = s["time_series"].T[0] # just take the first stream
+    t_sel = s['time_stamps']>ONSET_T
+    rawdata = s["time_series"].T[0][t_sel] # just take the first stream, and only after the common starting point
+    rawdata = rawdata[:N_SAMP] # take only the common chunk
     sz = rawdata.shape[0]
+    assert sz==N_SAMP
 
-    SR = info['effective_srate']
+    SR = float(info['nominal_srate'][0]) #info['effective_srate']
     units = info['desc'][0]['channels'][0]['channel'][0]['unit'][0]
     
     dset = hf[p].create_dataset(modality,(sz,),dtype='f',data=rawdata)
@@ -94,8 +132,9 @@ for s in streams:
 
     
 hf.close()
-print("Written to {}".format(hname))
-
+print("-------------- Written ------------\n {}".format(hname))
+print()
+print()
 
 
 
