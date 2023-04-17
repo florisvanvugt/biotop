@@ -34,7 +34,7 @@ python3 peak_picker.py
 
 
 
-Basic GUI controls
+### Basic GUI controls
 
 * Hold down `shift` while moving the mouse : Snap to closest maximum
 * Mouse scroll wheel up/down : Scroll back and forth in time
@@ -43,7 +43,11 @@ Basic GUI controls
 * Mouse right button single click : Remove peak
 * Mouse middle button click : Insert marker for invalid region
 * Mouse middle button double click : Remove invalid region
-* Keyboard `z` toggles between micro and macro zoom (make sure the window has focus)
+* Keyboard keys:
+   * `z` toggles between micro and macro zoom (make sure the window has focus)
+   * `a` shows the entire signal
+   * Left/right arrow keys scroll through the signal slowly
+   * PageDown/PageUp keys browse through the signal a full window at a time
 
 
 ## File format

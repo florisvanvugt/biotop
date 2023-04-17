@@ -163,21 +163,34 @@ gb['mark_out'] =None
 
 
 def do_auto_detect_peaks():
+
+    ## First clear the peaks in the current window
+    drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
+    tmin,tmax = drawrange
+    gb['peaks'] = [ p for p in gb['peaks']
+                    if p['t']<tmin or p['t']>tmax ]
+
+    ## Take the chunk of data in the current window
     ecg_target = gb['ecg-prep-column']
-    ecg = biodata.bio[ecg_target] # gb['ecg_clean']
-    
+    t = gb['bio']['t']
+    tsels = (t>=tmin) & (t<=tmax)
+    tmin,tmax=min(t[tsels]),max(t[tsels]) # this can differ from the window edges (if we are at the end or beginning of the signal)
+    samp_min = int(round(tmin*gb['SR'])) # calculate what sample the starting point corresponds to
+    ecg = biodata.bio[ecg_target][tsels]
+
+    #print("tmin {} samp_min {}".format(
+    #    tmin,samp_min))
     peaks = preprocess_ecg.peak_detect(ecg,gb['SR'])
-    gb['peaks']= [
+    gb['peaks'] += [
         {
-            'i':samp,
-            't':samp/biodata.SR,
+            'i':samp+samp_min,
+            't':(samp+samp_min)/biodata.SR,
             'valid':True,
             'source':'auto',
             'edited':False,
             'y':ecg[samp]
         } for samp in peaks
     ]
-
 
 
 
@@ -215,7 +228,12 @@ def clear_peaks_here():
 
     
 def auto_detect_peaks():
-    if len(gb['peaks']):
+    
+    drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
+    tmin,tmax = drawrange
+    peaks_here = [ p for p in gb['peaks'] if p['t']>=tmin and p['t']<=tmax ]
+    
+    if len(peaks_here):
         answer = askyesno(
             title='confirmation',
             message='Auto detecting peaks will clear any peaks may you have edited or added.\nDo you want to proceed?')
@@ -574,15 +592,19 @@ def toggle_zoom():
     
 
 
-
+    
 def process_key_events(event):
-    if event.key=='left':
-        back_in_time()
-    if event.key=='right':
-        forward_in_time()
+    #if event.key=='left': back_in_time()
+    #if event.key=='right': forward_in_time()
 
-    if event.key=='z':
+    if event.char=='z':
         toggle_zoom()
+    if event.char=='a':
+        tmax = max(gb['bio']['t'])
+        gb['tstart']=0
+        gb['WINDOW_T']=tmax
+        update_window_definitions()
+        redraw_all()
 
 
         
@@ -716,14 +738,26 @@ def redraw_all():
     redraw_erp()
     redraw_poincare()
 
-def back_in_time():
+
+def back_in_time(e=None):
     gb['tstart']-=gb['WINDOW_SHIFT_T']*gb['WINDOW_T']
     redraw_all()
 
-def forward_in_time():
+def forward_in_time(e=None):
     gb['tstart']+=gb['WINDOW_SHIFT_T']*gb['WINDOW_T']
     redraw_all()
     
+
+def jump_back_in_time(e=None):
+    gb['tstart']-=.95*gb['WINDOW_T']
+    redraw_all()
+
+def jump_forward_in_time(e=None):
+    gb['tstart']+=.95*gb['WINDOW_T']
+    redraw_all()
+    
+
+
 def set_window(e=None):
     # When the slider is used to move to a new portion of the signal
     new_val = gb['slider'].get()
@@ -790,7 +824,7 @@ def make_plot():
     canvas.get_tk_widget().pack()
     gb['canvas']=canvas
 
-    canvas.mpl_connect("key_press_event", process_key_events)
+    #canvas.mpl_connect("key_press_event", process_key_events)
     canvas.mpl_connect("key_press_event", key_press_handler)
     # Bind the button_press_event with the on_click() method
     canvas.mpl_connect('button_press_event', on_click)
@@ -1021,6 +1055,13 @@ b.grid(column=9,row=0,padx=0, pady=10)
 #canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=True)
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
+
+
+root.bind("<Left>",back_in_time)
+root.bind("<Right>",forward_in_time)
+root.bind("<Prior>",jump_back_in_time) # page_up
+root.bind("<Next>",jump_forward_in_time) # page_down
+root.bind("<Key>",process_key_events)
 
 make_plot()
 redraw()
