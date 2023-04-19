@@ -22,6 +22,7 @@ class BioData:
         if 'date' in self.hf.attrs:
             self.date = self.hf.attrs['date']
         self.participants = self.hf.attrs['participants']
+        self.channels = []
         self.channels_by_type = {}
         for p in self.participants:
             for ch in self.hf[p].keys():
@@ -35,6 +36,7 @@ class BioData:
                 assert self.SR==dset.attrs['SR']
                 bio[nm]=dset ##np.array(dset[:]) # convert into numpy array just to be sure
                 mod = dset.attrs['modality']
+                self.channels.append(nm)
                 self.channels_by_type[mod] = self.channels_by_type.get(mod,[])+[nm]
 
         bio['t']=np.arange(dset.shape[0])/self.SR
@@ -42,6 +44,10 @@ class BioData:
         self.bio = bio
         self.preprocessed = {}
 
+
+
+    def get_channels(self):
+        return self.channels
 
     def get_ecg_channels(self):
         return self.channels_by_type['ecg']
