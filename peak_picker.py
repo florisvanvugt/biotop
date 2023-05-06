@@ -98,7 +98,8 @@ if not os.path.exists(fname):
 ###
 print("Opening file {}".format(fname))
 
-import read_h5py
+from hdphysio5 import read_h5py
+# Submodule, load from https://github.com/florisvanvugt/hdphysio5
 
 biodata       = read_h5py.read(fname)
 
@@ -422,7 +423,7 @@ def on_move(event):
     if event.xdata:
         t = event.xdata
         gb['cursor.t']=t
-        if 'shift' in event.modifiers:
+        if event.modifiers and 'shift' in event.modifiers:
             gb['cursor.snap.t']=snap_to_closest_peak(event.xdata)
         else:
             gb['cursor.snap.t']=None
