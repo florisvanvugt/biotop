@@ -26,6 +26,12 @@ pip3 install neurokit2 ecg-h5py py-ecg-detectors matplotlib scipy numpy
 
 This also uses [HDPhysio5, a python-based library for the physiology HDF5 specification](https://github.com/florisvanvugt/hdphysio5), which will be loaded as a submodule.
 
+```
+git clone https://github.com/florisvanvugt/physio_peak_picker.git
+git submodule init
+git submodule update
+```
+
 
 
 
