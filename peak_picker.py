@@ -195,7 +195,7 @@ def do_auto_detect_peaks():
     tsels = (t>=tmin) & (t<=tmax)
     tmin,tmax=min(t[tsels]),max(t[tsels]) # this can differ from the window edges (if we are at the end or beginning of the signal)
     samp_min = int(round(tmin*gb['SR'])) # calculate what sample the starting point corresponds to
-    ecg = gb['signal']#biodata.bio[ecg_target][tsels]
+    ecg = gb['signal'][tsels]#biodata.bio[ecg_target][tsels]
 
     #print("tmin {} samp_min {}".format(
     #    tmin,samp_min))
