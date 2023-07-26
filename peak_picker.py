@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 import os
 import scipy.signal
-
+import neurokit2
 
 import json
 
@@ -98,22 +98,19 @@ if not os.path.exists(fname):
 ###
 print("Opening file {}".format(fname))
 
-from hdphysio5 import read_h5py
+import biobabel as bb
+#from hdphysio5 import read_h5py
 # Submodule, load from https://github.com/florisvanvugt/hdphysio5
 
-biodata       = read_h5py.read(fname)
+bio       = bb.load(fname)
 
-print(biodata.summary())
-
-gb['biodata'] = biodata
-gb['SR']      = biodata.SR
-gb['bio']     = biodata.bio
+bio.print()
 
 
 
 
 import misc
-fields = biodata.get_ecg_channels()
+fields = bio.find_channels({'modality':'ecg'})
 fields.sort()
 if len(fields)>1:
 
@@ -123,21 +120,42 @@ if len(fields)>1:
         pc = misc.give_choices(fields)
 else:
     pc = fields[0]
+
+
 if pc:
-    gb['plot.column'] = pc
-    gb['ecg-prep-column']=pc+'-prep'
-    gb['ecg_preprocess'] = {gb['plot.column']:gb['ecg-prep-column']}
+    gb['channel'] = pc
+    gb['t']=bio.get_time(pc)
+    hdr,dat = bio.get(pc)
+    gb['SR']=hdr['sampling_frequency']
+    gb['hdr']=hdr
+
+    # Also make a filtered version
+    METHOD = 'engzeemod2012'
+    #METHOD = 'neurokit2'
+    #METHOD
+    print("Filtering ECG signal using {} procedure in neurokit2".format(METHOD))
+    signal_flt = neurokit2.ecg_clean(dat,sampling_rate=gb['SR'],method=METHOD)
+    
+    #sos = butter(15, 3, 'low', fs=gb['SR'], output='sos')
+    #filtd = signal.sosfiltfilt(sos, dat)
+    #gb['filtered']=filtd
+    gb['raw']=dat
+    gb['signal']=signal_flt
 
 else:
     sys.exit(-1)
 
 
 
+#gb['biodata'] = biodata
+#gb['SR']      = biodata.SR
+#gb['bio']     = biodata.bio
+
     
 
-bio = biodata.bio
-print("Effective sampling rate hovers around {} Hz".format(biodata.SR))
-bio['sample.t']=np.arange(bio['t'].shape[0])/biodata.SR
+#bio = biodata.bio
+#print("Effective sampling rate hovers around {} Hz".format(biodata.SR))
+#bio['sample.t']=np.arange(bio['t'].shape[0])/biodata.SR
 
 
 
@@ -172,12 +190,12 @@ def do_auto_detect_peaks():
                     if p['t']<tmin or p['t']>tmax ]
 
     ## Take the chunk of data in the current window
-    ecg_target = gb['ecg-prep-column']
-    t = gb['bio']['t']
+    #ecg_target = gb['ecg-prep-column']
+    t = gb['t']
     tsels = (t>=tmin) & (t<=tmax)
     tmin,tmax=min(t[tsels]),max(t[tsels]) # this can differ from the window edges (if we are at the end or beginning of the signal)
     samp_min = int(round(tmin*gb['SR'])) # calculate what sample the starting point corresponds to
-    ecg = biodata.bio[ecg_target][tsels]
+    ecg = gb['signal']#biodata.bio[ecg_target][tsels]
 
     #print("tmin {} samp_min {}".format(
     #    tmin,samp_min))
@@ -185,7 +203,7 @@ def do_auto_detect_peaks():
     gb['peaks'] += [
         {
             'i':samp+samp_min,
-            't':(samp+samp_min)/biodata.SR,
+            't':(samp+samp_min)/gb['SR'],
             'valid':True,
             'source':'auto',
             'edited':False,
@@ -253,7 +271,7 @@ def do_import_biopac_peaks(f):
         ts = peakdata['Time']
         gb['peaks']= [
             {
-                'i':int(round(t*biodata.SR)),
+                'i':int(round(t*gb['SR'])),
                 't':t,
                 'valid':True,
                 'source':'auto',
@@ -295,8 +313,8 @@ def import_biopac_peaks():
 
 
 ## ECG Preprocessing
-ecg_target = gb['ecg-prep-column']
-preprocess_ecg.preprocess(biodata,gb,[gb['plot.column']])
+#ecg_target = gb['ecg-prep-column']
+#preprocess_ecg.preprocess(biodata,gb,[gb['plot.column']])
 if 'peaks' not in gb:
     gb['peaks']=[]
 
@@ -321,19 +339,29 @@ JSON_OUT = '{}_peaks.json'.format(fname)
 if os.path.exists(JSON_OUT):
     with open(JSON_OUT,'r') as f:
         gb['qc']      = json.loads(f.read())
-        gb['invalid'] = gb['qc'].get('invalid',{}).get(gb['plot.column'],[])
-        gb['peaks']   = gb['qc'].get('peaks',{}).get(gb['plot.column'],[])
+        gb['invalid'] = gb['qc'].get('invalid',{}).get(gb['channel'],[])
+        gb['peaks']   = gb['qc'].get('peaks',{}).get(gb['channel'],[])
 
+
+def get_signal_at_t(t):
+    # Return the ECG signal value closest to time t
+    if not t: return None
+    samp = int(round(t*gb['SR'])) # getting the closest sample
+    #ecg_target = gb['ecg-prep-column']
+    #ecg = biodata.bio[ecg_target] # gb['ecg_clean']
+    return gb['signal'][samp]
+
+        
 # Reconstruct peak samples
 for p in gb['peaks']:
-    p['i']=int(round(p['t']*biodata.SR))
-    p['y']=biodata.bio[ gb['ecg-prep-column'] ][p['i']]
+    p['i']=int(round(p['t']*gb['SR']))
+    p['y']=get_signal_at_t(p['t'])#biodata.bio[ gb['ecg-prep-column'] ][p['i']]
 
 # Curate invalid
 gb['invalid'] = curate_invalid(gb['invalid'])
 
     
-SUMMARY_OUT = '{}_{}_summary.csv'.format(fname,gb['plot.column'].replace('/','_'))
+SUMMARY_OUT = '{}_{}_summary.csv'.format(fname,gb['channel'].replace('/','_'))
 
         
     
@@ -394,26 +422,19 @@ SHIFT_SNAP_DT = .1
 def snap_to_closest_peak(t):
     # Find the local maximum
     tmin,tmax = t-SHIFT_SNAP_DT,t+SHIFT_SNAP_DT
-    tsels = (gb['bio']['t']>=tmin) & (gb['bio']['t']<=tmax)
+    tsels = (gb['t']>=tmin) & (gb['t']<=tmax)
 
-    ecg_target = gb['ecg-prep-column']
-    ecg = biodata.bio[ecg_target][tsels] # gb['ecg_clean']
-    ecg_t = gb['bio']['t'][tsels]
+    #ecg_target = gb['ecg-prep-column']
+    #ecg = biodata.bio[ecg_target][tsels] # gb['ecg_clean']
+    ecgsels = gb['signal'][tsels]
+    ecg_t = gb['t'][tsels]
     
-    peak_t = ecg_t[np.argmax(ecg)]
+    peak_t = ecg_t[np.argmax(ecgsels)]
     if peak_t:
         return peak_t
     else:
         return t
 
-
-def get_signal_at_t(t):
-    # Return the ECG signal value closest to time t
-    if not t: return None
-    samp = int(round(t*biodata.SR)) # getting the closest sample
-    ecg_target = gb['ecg-prep-column']
-    ecg = biodata.bio[ecg_target] # gb['ecg_clean']
-    return ecg[samp]
 
 
     
@@ -433,7 +454,7 @@ def on_move(event):
 def on_click(event):
 
     ## Detect which subplot we're clicking to determine what is the signal we want to mark
-    signal = gb['plot.column']
+    signal = gb['signal'] #gb['channel']
 
     # Set a new mark
     t = event.xdata
@@ -449,10 +470,11 @@ def on_click(event):
         # Are we zoomed in enough?
         if not check_window_zoom(t): return
 
-        samp = int(round(t*gb['biodata'].SR))
-        t = samp/gb['biodata'].SR # snap the time to an actual sample
-        ecg = biodata.bio[gb['ecg-prep-column']]
-        samp = int(t*gb['biodata'].SR)
+        SR = gb['SR']
+        samp = int(round(t*SR))
+        t = samp/SR #gb['biodata'].SR # snap the time to an actual sample
+        ecg = gb['signal'] #biodata.bio[gb['ecg-prep-column']]
+        samp = int(t*SR)#gb['biodata'].SR)
         
         ## Is there already another peak close by?
         i,peak = find_closest_peak(t)
@@ -464,18 +486,18 @@ def on_click(event):
             peak['valid']=True
             peak['edited']=True
             peak['source']='manual.edited'
-            peak['y']=ecg[samp]
+            peak['y']=get_signal_at_t(t)
 
         else:
         
-            ecg = biodata.bio[gb['ecg-prep-column']]
+            #ecg = biodata.bio[gb['ecg-prep-column']]
             peak = {
                 'i':samp,
-                't':samp/biodata.SR,
+                't':samp/gb['SR'],
                 'valid':True,
                 'edited':True,
                 'source':'manual',
-                'y':ecg[samp]
+                'y':get_signal_at_t(t)
             }
             gb['peaks'].append(peak)
             
@@ -601,7 +623,7 @@ def process_key_events(event):
     if event.char=='z':
         toggle_zoom()
     if event.char=='a':
-        tmax = max(gb['bio']['t'])
+        tmax = max(gb['t'])
         gb['tstart']=0
         gb['WINDOW_T']=tmax
         update_window_definitions()
@@ -633,16 +655,6 @@ def process_scroll_events(event):
         
 
         
-class NpEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.floating):
-            return float(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return super(NpEncoder, self).default(obj)
-
 
 
 
@@ -667,7 +679,7 @@ def get_valid_RR_intervals(trange=None):
             t = peak['t']
             accepted = True
             for (s,t0,t1) in inv:
-                if s==gb['plot.column'] and does_overlap((t0,t1),(t,nextpeak['t'])):
+                if s==gb['channel'] and does_overlap((t0,t1),(t,nextpeak['t'])):
                     ## Oops, this falls into the invalid range!
                     accepted = False
 
@@ -698,7 +710,7 @@ def save_files():
     ## Write what we've got so far to file
 
     ## Prepare for writing
-    pc = gb['plot.column']
+    pc = gb['channel']
     inv = gb['qc'].get('invalid',{})
     # Round the time points, and curate them, and then insert them into the global object
     inv[pc] = [ (s,round(t0,4),round(t1,4)) for (s,t0,t1) in curate_invalid(gb['invalid']) ]
@@ -708,7 +720,7 @@ def save_files():
     pks[pc]=strip_sample(gb['peaks']) # just to make sure
     gb['qc']['peaks']=pks
     
-    json_obj = json.dumps(gb['qc'], indent=4,cls=NpEncoder)
+    json_obj = json.dumps(gb['qc'], indent=4,cls=misc.NpEncoder)
     print("Saving {}".format(JSON_OUT))
     with open(JSON_OUT,'w') as f:
         f.write(json_obj)
@@ -728,6 +740,7 @@ def save_files():
 def on_closing():
     save_files()
     root.destroy()
+    sys.exit(0)
     
 
 def quit():
@@ -797,7 +810,7 @@ def window_narrower(around_t=None):
     update_window(WINDOW_CHANGE_FACTOR,around_t)
     
 def get_n_windows():
-    return int(np.floor(max(gb['bio']['t'])/gb['WINDOW_T']))
+    return int(np.floor(max(gb['t'])/gb['WINDOW_T']))
 
 def update_window_definitions():
     # If the window width has changed, cascade the necessary updates
@@ -844,7 +857,7 @@ ALPHA = .8
 def is_in_invalid(t):
     # Return whether the given time point is in a region marked as invalid
     for (signal,t_start,t_end) in gb['invalid']:
-        if signal==gb['plot.column']:
+        if signal==gb['channel']:
             if t_start<=t and t_end>=t:
                 return True
     return False
@@ -868,27 +881,28 @@ def redraw():
     rax = gb['rate.ax']
     rax.cla()
     
-    c = gb['plot.column']
+    c = gb['channel']
 
 
     # Plot on axis
-    biodata = gb['biodata']
-    SR = biodata.SR
+    #biodata = gb['biodata']
+    SR = gb['SR']
 
     #check if there's a rounding error causing differing lengths of plotx and signal
-    ecg_target = gb['ecg-prep-column']
-    ecg = biodata.bio[ecg_target] # gb['ecg_clean']
+    #ecg_target = gb['ecg-prep-column']
+    ecg = gb['signal'] #biodata.bio[ecg_target] # gb['ecg_clean']
     ##print(ecg.shape)
     
     #prep = biodata.preprocessed[ecg_target]
-    tsels = (gb['bio']['t']>=tmin) & (gb['bio']['t']<=tmax)
-    plot_t = gb['bio']['t']
+    tsels = (gb['t']>=tmin) & (gb['t']<=tmax)
+    plot_t = gb['t']
 
     gb['cursor']     =ax.axvline(x=gb['cursor.t'],lw=1,color='blue',alpha=.9,zorder=99999)
-    gb['cursor.snap']=ax.plot([gb['cursor.snap.t']],
-                              [get_signal_at_t(gb['cursor.snap.t'])],
-                              marker='o',markersize=5,markerfacecolor='none',
-                              markeredgecolor='darkgreen',alpha=.9,zorder=99999)[0]
+    gb['cursor.snap']=ax.plot(
+        [gb['cursor.snap.t']],
+        [get_signal_at_t(gb['cursor.snap.t'])],
+        marker='o',markersize=5,markerfacecolor='none',
+        markeredgecolor='darkgreen',alpha=.9,zorder=99999)[0]
     #print(gb['cursor.snap'])
         
     for (signal,t_start,t_end) in gb['invalid']:
@@ -976,7 +990,7 @@ def redraw():
         tselspec = plot_t[tsels]
         
         for (s,t0,t1) in gb['invalid']:
-            if s==gb['plot.column']:
+            if s==gb['channel']:
                 sig[ (tselspec>=t0) & (tselspec<=t1) ] = np.nan
                 #tselspec = tselspec & ((plot_t<t0)|(plot_t>t1))
         sig = sig[~np.isnan(sig)] # finally truly remove them
@@ -1129,15 +1143,16 @@ def redraw_erp():
     drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
     tmin,tmax = drawrange
 
-    c = gb['plot.column']
-    biodata = gb['biodata']
-    SR = biodata.SR
+    c = gb['channel']
+    #biodata = gb['biodata']
+    SR = gb['SR']#gb['SR']
 
-    ecg_target = gb['ecg-prep-column']
-    ecg = biodata.bio[ecg_target] # gb['ecg_clean']
+    #ecg_target = gb['ecg-prep-column']
+    #ecg = biodata.bio[ecg_target] # gb['ecg_clean']
+    ecg = gb['signal']
     
     #prep = biodata.preprocessed[ecg_target]
-    plot_t = biodata.bio['t']
+    plot_t = gb['t']
 
     ax.axhline(y=0,lw=.5,color='gray')
     ax.axvline(x=0,lw=.5,color='gray')
@@ -1193,8 +1208,8 @@ def redraw_erp():
 
 def capture_erp():
     ## Capture the current ERPs and turn them into a template
-    SR = gb['biodata'].SR
-    ecg = gb['biodata'].bio[gb['ecg-prep-column']]
+    SR = gb['SR']
+    ecg = gb['signal'] #gb['biodata'].bio[gb['ecg-prep-column']]
 
     drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
     tmin,tmax = drawrange
@@ -1252,8 +1267,9 @@ def search_template():
 
     meanerp=gb['erp.template']
 
-    SR = gb['biodata'].SR
-    ecg_full = gb['biodata'].bio[gb['ecg-prep-column']]
+    SR = gb['SR']
+    #ecg_full = gb['biodata'].bio[gb['ecg-prep-column']]
+    ecg_full = gb['signal']
     drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
     tmin,tmax = drawrange
     if tmin<0: tmin=0
@@ -1338,7 +1354,7 @@ make_erp_plot()
 ##
 poincare_window = Toplevel(root)
 gb['poincare_window']=poincare_window
-poincare_window.wm_title("Physio Poincare - {} {}".format(fname,gb['plot.column']))
+poincare_window.wm_title("Physio Poincare - {} {}".format(fname,gb['channel']))
 poincare_window.geometry('{}x{}'.format(450,400))
 
    

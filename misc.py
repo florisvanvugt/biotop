@@ -11,7 +11,7 @@ def give_choices(choicelist):
 
     choicewin = Tk()
     choicewin.resizable(False, False)
-    choicewin.title("ChoiceBox")
+    choicewin.title("Select the signal to analyze")
 
     fnt = tkFont.Font(family='Helvetica', size=15, weight='normal')
 
@@ -146,6 +146,18 @@ def run_dual_input():
 
 
 
+
+import json
+
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
 
 
     
