@@ -29,8 +29,6 @@ This also uses [HDPhysio5, a python-based library for the physiology HDF5 specif
 
 ```
 git clone https://github.com/florisvanvugt/physio_peak_picker.git
-git submodule init
-git submodule update
 ```
 
 
@@ -38,8 +36,16 @@ git submodule update
 
 ## Usage
 
+For ECG analysis:
+
 ```
 python3 peak_picker.py
+```
+
+For respiration analysis:
+
+```
+python3 respiration_picker.py
 ```
 
 
