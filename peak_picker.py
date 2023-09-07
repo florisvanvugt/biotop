@@ -327,8 +327,8 @@ def curate_invalid(inv):
     toret = []
     for (s,t0,t1) in inv:
         dt = abs(t0-t1)
-        if dt<MIN_INVALID_DUR: continue
-        ## Too short to be plausible
+        if dt<MIN_INVALID_DUR: continue         ## Too short to be plausible
+        if isinstance(s,list): continue         ## This was due to a bug previously. s should be a string, the name of the channel
         toret.append( (s,t0,t1) )
     return toret
 
