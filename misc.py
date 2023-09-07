@@ -46,7 +46,9 @@ def give_choices(choicelist):
 def does_overlap(intv1,intv2):
     # Return whether the two intervals overlap
     (a1,b1)=intv1
+    if a1>b1: (a1,b1)=(b1,a1) # if coded inversely, flip
     (a2,b2)=intv2
+    if a2>b2: (a2,b2)=(b2,a2)
     overlapmin = max([a1,a2])
     overlapmax = min([b1,b2])
     return overlapmin<=overlapmax
@@ -148,6 +150,8 @@ def run_dual_input():
 
 
 import json
+import numpy as np
+
 
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
