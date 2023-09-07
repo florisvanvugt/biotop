@@ -566,7 +566,7 @@ def on_click(event):
             ## Check if overlaps with existing, if so, merge together
             toremove = []
             for i,(s,t0,t1) in enumerate(gb['invalid']):
-                if s==signal:
+                if s==gb['channel']:
                     ## Check if this overlaps with the to-be-added one
                     tso = np.max([t_start,t0])
                     teo = np.min([t_end,t1])
@@ -578,8 +578,10 @@ def on_click(event):
                         toremove.append( i ) # remove the old one
 
             gb['invalid'] = [ x for j,x in enumerate(gb['invalid']) if j not in toremove ]
-            gb['invalid'].append( (signal,t_start,t_end) )
+            gb['invalid'].append( (gb['channel'],t_start,t_end) )
 
+            #print(gb['invalid'])
+            
             ## Mark any peaks in that region automatically as invalid
             for peak in gb['peaks']:
                 if peak['t']>=t_start and peak['t']<t_end:
@@ -669,18 +671,20 @@ def get_valid_RR_intervals(trange=None):
     validpeaks = [ p for p in gb['peaks'] if p['valid'] ] # Take only the valid peaks
     validpeaks.sort(key=lambda p: p['t']) # sort them in time
     inv = gb['invalid']
+    #print(inv)
     united = []
 
     for i,peak in enumerate(validpeaks[:-1]):
         if peak['t']>=tmin and peak['t']<=tmax:
             nextpeak = validpeaks[i+1]
 
-            ## Check that this does not fall into invalid regions
+            ## Check that this does not fall into regions marked as invalid
             t = peak['t']
             accepted = True
             for (s,t0,t1) in inv:
                 if s==gb['channel'] and does_overlap((t0,t1),(t,nextpeak['t'])):
                     ## Oops, this falls into the invalid range!
+                    #print("Overlaps")
                     accepted = False
 
             if accepted:

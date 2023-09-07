@@ -44,11 +44,13 @@ def give_choices(choicelist):
 
 
 def does_overlap(intv1,intv2):
-    # Return whether the two intervals overlap
+    # Return whether two intervals overlap
+    # The intervals are given as (start,end) tuples.
     (a1,b1)=intv1
     if a1>b1: (a1,b1)=(b1,a1) # if coded inversely, flip
     (a2,b2)=intv2
     if a2>b2: (a2,b2)=(b2,a2)
+    # So now a1<=b1 and a2<=b2
     overlapmin = max([a1,a2])
     overlapmax = min([b1,b2])
     return overlapmin<=overlapmax
