@@ -523,6 +523,7 @@ def on_click(event):
     
     
     if event.button==MouseButton.MIDDLE and event.dblclick:
+        # Double click middle mouse button:
 
         ##
         ## Attempt to remove the current "invalid" slice
@@ -530,7 +531,7 @@ def on_click(event):
         
         toremove = []
         for i,(s,t0,t1) in enumerate(gb['invalid']):
-            if signal==s and t0<t and t<t1:
+            if gb['channel']==s and t0<t and t<t1:
                 toremove.append(i)
         gb['invalid'] = curate_invalid([ x for j,x in enumerate(gb['invalid']) if j not in toremove ]) ## actually remove
 
