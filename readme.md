@@ -21,7 +21,7 @@ The results are saved in a JSON file format.
 This should install most of what you need:
 
 ```
-pip3 install neurokit2 ecg-h5py py-ecg-detectors matplotlib scipy numpy
+pip3 install neurokit2 py-ecg-detectors matplotlib scipy numpy
 python -m pip install "biobabel @ git+https://github.com/florisvanvugt/biobabel"
 ```
 
