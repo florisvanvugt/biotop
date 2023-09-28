@@ -198,6 +198,27 @@ def auto_detect_peaks():
         redraw_all()
 
 
+from misc import chop_away
+
+        
+def find_valid_between(tmin,tmax):
+    # Find the valid portions in the interval (tmin,tmax).
+    # That is, return a set of intervals (a,b) that cover the
+    # valid (i.e. not marked as invalid) between tmin and tmax.
+
+    # Start with the optimistic idea that the whole range is valid
+    valids = [ (tmin,tmax) ]
+
+    # Now let's chip away the portions that are marked as invalid
+    for s,t0,t1 in gb['invalid']:
+        if gb['channel']==s:
+
+            # See if this overlap with any of the valid portions
+            valids = chop_away(t0,t1,valids)
+
+    return valids
+
+
 
 
 def do_auto_detect_peaks():
@@ -209,32 +230,39 @@ def do_auto_detect_peaks():
     gb['peaks'] = [ p for p in gb['peaks']
                     if p['t']<tmin or p['t']>tmax ]
 
-    ## Take the chunk of data in the current window
-    t = gb['t']
-    tsels = (t>=tmin) & (t<=tmax)
-    tmin,tmax=min(t[tsels]),max(t[tsels]) # this can differ from the window edges (if we are at the end or beginning of the signal)
-    samp_min = int(round(tmin*gb['SR'])) # calculate what sample the starting point corresponds to
-    signal = gb['signal'][tsels]
-    
-    signals, info = nk.rsp_process(
-        signal,
-        sampling_rate=gb['SR'],
-        report="text",
-        method='khodadad2018')
 
-    peaks = [ ('peak',s) for s in info['RSP_Peaks'] ]+[ ('trough',s) for s in info['RSP_Troughs'] ]
-    
-    gb['peaks'] += [
-        {
-            'i':samp+samp_min,
-            't':(samp+samp_min)/gb['SR'],
-            'valid':True,
-            'source':'auto',
-            'edited':False,
-            'y':signal[samp],
-            'kind':kind
-        } for kind,samp in peaks
-    ]
+    ## Now, find the valid portions of signal in the current window.
+    ranges = find_valid_between(tmin,tmax)
+
+    t = gb['t']
+
+    for (fromt,tot) in ranges:
+
+        ## Take the chunk of data in the current window
+        tsels = (t>=fromt) & (t<=tot)
+        tmin,tmax=min(t[tsels]),max(t[tsels]) # this can differ from the window edges (if we are at the end or beginning of the signal)
+        samp_min = int(round(fromt*gb['SR'])) # calculate what sample the starting point corresponds to
+        signal = gb['signal'][tsels]
+
+        signals, info = nk.rsp_process(
+            signal,
+            sampling_rate=gb['SR'],
+            report="text",
+            method='khodadad2018')
+
+        peaks = [ ('peak',s) for s in info['RSP_Peaks'] ]+[ ('trough',s) for s in info['RSP_Troughs'] ]
+
+        gb['peaks'] += [
+            {
+                'i':samp+samp_min,
+                't':(samp+samp_min)/gb['SR'],
+                'valid':True,
+                'source':'auto',
+                'edited':False,
+                'y':signal[samp],
+                'kind':kind
+            } for kind,samp in peaks
+        ]
 
     
 
@@ -441,6 +469,7 @@ def redraw():
             pch,
             label='raw',
             zorder=-15,
+            alpha=.3,
             color=COLORS.get(c,"#999999"))
 
 
