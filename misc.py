@@ -59,6 +59,35 @@ def does_overlap(intv1,intv2):
 
 
 
+def chop_away(a,b,intvls):
+    # Given an interval, (a,b),
+    # and a set of intervals, return that set of intervals
+    # where for each interval, we have chopped away the part that
+    # overlaps with (a,b).
+    toret = []
+
+    # Ensure that a<b
+    if a>b: (a,b)=(b,a)
+    
+    for (t0,t1) in intvls:
+        if not does_overlap((t0,t1),(a,b)):
+            toret.append((t0,t1))
+        else:
+            # It does overlap... hmmm....
+            # So basically we want to keep as much of (t0,t1) as we can,
+            # while chipping away any overlap with (a,b)
+            
+            # So we chop away the (a,b) portion from (t0,t1)
+            if a>t0:
+                # Then the portion (a,t0) is valid! Yay!
+                toret.append((t0,a))
+            if t1>b:
+                # Then the portion (t1,b) is valid! Yay!
+                toret.append((b,t1))
+            
+    return toret
+    
+
 
 
 
