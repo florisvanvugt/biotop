@@ -1,11 +1,11 @@
-# Physio Peak Picker
+# Woodpecker: picking peaks in physiological data 
 
-A simple GUI for human-assisted semiautomatic ECG analysis.
+A simple GUI for human-assisted semiautomatic ECG and respiration preprocessing.
 
 **Purpose** ECG analysis of real-world data can be tricky, especially when there are lots of artefacts.
 Automated pipelines exist but the results can often not be inspected, and not manually adjusted.
 
-The current script allows you to import, view and explore ECG data. 
+The current script allows you to import, view and explore ECG and respiratory data. 
 You can run automated peak detection which you can then inspect and modify manually.
 The results are saved in a JSON file format.
 
