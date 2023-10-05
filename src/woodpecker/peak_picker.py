@@ -17,7 +17,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
 
-import preprocess_ecg_detectors as preprocess_ecg
+import woodpecker.preprocess_ecg_detectors as preprocess_ecg
 
 import numpy as np
 import pandas as pd
@@ -29,154 +29,16 @@ import json
 
 import sys
 
-from misc import does_overlap
+from woodpecker.misc import does_overlap
+
+import woodpecker.misc as misc
 
 
-# Main window dimensions
-window_w,window_h=1300,450
-
-
-# Globals to carry around
+# Globals we carry around
 gb = {}
 
-gb["WINDOW_T"] =15 # default window width in seconds
-gb['WINDOW_SHIFT_T'] =.2 # proportion of the window to shift when we go back and forth in time
 
 
-gb['qc']={}
-gb['invalid']= []
-gb['peaks']= []
-gb['cursor.t']=0
-gb['cursor.snap.t']=0
-gb['cursor.snap']=None
-
-
-
-##
-##
-## Select file to open
-##
-##
-
-fname = None
-if len(sys.argv)>1:
-    fname = sys.argv[1]
-else:
-
-    filetypes = (
-        ('HDF5 dataset', '*.hdf5'),
-        ('All files', '*.*')
-    )
-
-    fname = fd.askopenfilename(
-        title='Select your recording',
-        initialdir='.',
-        filetypes=filetypes)
-
-if not fname:
-    print("You need to select a file. Exiting now.")
-    sys.exit(-1)
-
-
-if not os.path.exists(fname):
-
-    ok = False
-    for addon in ['.hdf5','hdf5']:
-        if os.path.exists(fname+addon):
-            fname = fname+addon
-            ok = True
-            continue
-    if not ok:
-        print("File {} does not seem to exist. Exiting now.".format(fname))
-        sys.exit(-1)
-    
-
-
-
-###
-### Read the data
-###
-print("Opening file {}".format(fname))
-
-import biobabel as bb
-#from hdphysio5 import read_h5py
-# Submodule, load from https://github.com/florisvanvugt/hdphysio5
-
-bio       = bb.load(fname)
-
-bio.print()
-
-
-
-
-import misc
-fields = bio.find_channels({'modality':'ecg'})
-fields.sort()
-if len(fields)>1:
-
-    if len(sys.argv)>2:
-        pc = sys.argv[2]
-    else:
-        pc = misc.give_choices(fields)
-else:
-    pc = fields[0]
-
-
-if pc:
-    gb['channel'] = pc
-    gb['t']=bio.get_time(pc)
-    hdr,dat = bio.get(pc)
-    gb['SR']=hdr['sampling_frequency']
-    gb['hdr']=hdr
-
-    # Also make a filtered version
-    METHOD = 'engzeemod2012'
-    #METHOD = 'neurokit2'
-    #METHOD
-    print("Filtering ECG signal using {} procedure in neurokit2".format(METHOD))
-    signal_flt = neurokit2.ecg_clean(dat,sampling_rate=gb['SR'],method=METHOD)
-    
-    #sos = butter(15, 3, 'low', fs=gb['SR'], output='sos')
-    #filtd = signal.sosfiltfilt(sos, dat)
-    #gb['filtered']=filtd
-    gb['raw']=dat
-    gb['signal']=signal_flt
-
-else:
-    sys.exit(-1)
-
-
-
-#gb['biodata'] = biodata
-#gb['SR']      = biodata.SR
-#gb['bio']     = biodata.bio
-
-    
-
-#bio = biodata.bio
-#print("Effective sampling rate hovers around {} Hz".format(biodata.SR))
-#bio['sample.t']=np.arange(bio['t'].shape[0])/biodata.SR
-
-
-
-
-root = tkinter.Tk()
-root.wm_title("Physio Peak Picker - {}".format(fname))
-root.geometry('{}x{}'.format(window_w,window_h))
-gb['root']=root
-
-
-COLORS = {}
-
-
-
-
-
-gb['tstart']=0 # the left edge of the window we're currently showing
-
-# Current markers
-gb['mark_in']  =None
-gb['mark_out'] =None
 
 
 
@@ -218,7 +80,7 @@ def do_auto_detect_peaks():
 
 
 
-from misc import chop_away
+from woodpecker.misc import chop_away
 
         
 def find_valid_between(tmin,tmax):
@@ -336,13 +198,6 @@ def import_biopac_peaks():
 
 
 
-## ECG Preprocessing
-#ecg_target = gb['ecg-prep-column']
-#preprocess_ecg.preprocess(biodata,gb,[gb['plot.column']])
-if 'peaks' not in gb:
-    gb['peaks']=[]
-
-
 
 
 MIN_INVALID_DUR = .1 # minimum size for an "invalid" portion
@@ -358,14 +213,6 @@ def curate_invalid(inv):
 
     
 
-# See if there is an existing peak file
-JSON_OUT = '{}_peaks.json'.format(fname)
-if os.path.exists(JSON_OUT):
-    with open(JSON_OUT,'r') as f:
-        gb['qc']      = json.loads(f.read())
-        gb['invalid'] = gb['qc'].get('invalid',{}).get(gb['channel'],[])
-        gb['peaks']   = gb['qc'].get('peaks',{}).get(gb['channel'],[])
-
 
 def get_signal_at_t(t):
     # Return the ECG signal value closest to time t
@@ -376,17 +223,6 @@ def get_signal_at_t(t):
     return gb['signal'][samp]
 
         
-# Reconstruct peak samples
-for p in gb['peaks']:
-    p['i']=int(round(p['t']*gb['SR']))
-    p['y']=get_signal_at_t(p['t'])#biodata.bio[ gb['ecg-prep-column'] ][p['i']]
-
-# Curate invalid
-gb['invalid'] = curate_invalid(gb['invalid'])
-
-    
-SUMMARY_OUT = '{}_{}_summary.csv'.format(fname,gb['channel'].replace('/','_'))
-
         
     
 
@@ -750,8 +586,8 @@ def save_files():
     gb['qc']['peaks']=pks
     
     json_obj = json.dumps(gb['qc'], indent=4,cls=misc.NpEncoder)
-    print("Saving {}".format(JSON_OUT))
-    with open(JSON_OUT,'w') as f:
+    print("Saving {}".format(gb['JSON_OUT']))
+    with open(gb['JSON_OUT'],'w') as f:
         f.write(json_obj)
 
     ## Also create a more succinct report that we can use to calculate HRV
@@ -768,7 +604,7 @@ def save_files():
 
 def on_closing():
     save_files()
-    root.destroy()
+    gb['root'].destroy()
     sys.exit(0)
     
 
@@ -968,7 +804,7 @@ def redraw():
             pch,
             label='cleaned',
             zorder=-10,
-            color=COLORS.get(c,"#9b0000"))
+            color=gb['COLORS'].get(c,"#9b0000"))
 
     for peak in gb['peaks']:
         if peak['t']>=tmin and peak['t']<=tmax:
@@ -1047,80 +883,6 @@ def update_axes():
     
 
     
-
-
-    
-navf = tkinter.Frame(root)
-tkinter.Grid.columnconfigure(navf, 0, weight=1)
-navf.pack(side=tkinter.BOTTOM)
-bigfont = tkFont.Font(family='Helvetica', size=28, weight='bold')
-button_wid  = tkinter.Button(master=navf, text="+", command=window_wider,    font=bigfont)
-button_narr = tkinter.Button(master=navf, text="-", command=window_narrower, font=bigfont)
-button_wid.grid(column=0,row=0,padx=0, pady=10)
-button_narr.grid(column=1,row=0,padx=0, pady=10)
-
-
-button_back = tkinter.Button(master=navf, text="<", command=back_in_time, font=bigfont)
-button_forw = tkinter.Button(master=navf, text=">", command=forward_in_time, font=bigfont)
-button_back.grid(column=2,row=0,padx=10, pady=10)
-button_forw.grid(column=4,row=0,padx=10, pady=10)
-
-slider_update = tkinter.Scale(
-    navf,
-    from_=0,
-    to=get_n_windows(),
-    length=300,
-    orient=tkinter.HORIZONTAL,
-    label="")
-slider_update.bind("<ButtonRelease-1>",set_window)
-slider_update.grid(column=3,row=0,padx=10,pady=10)
-gb['slider']=slider_update
-
-
-
-
-b = tkinter.Button(master=navf, text="Auto Detect", command=auto_detect_peaks)
-b.grid(column=5,row=0,padx=10, pady=10)
-b = tkinter.Button(master=navf, text="Clear all", command=clear_peaks)
-b.grid(column=6,row=0,padx=0, pady=10)
-b = tkinter.Button(master=navf, text="Clear here", command=clear_peaks_here)
-b.grid(column=7,row=0,padx=0, pady=10)
-b = tkinter.Button(master=navf, text="Load biopac peaks", command=import_biopac_peaks)
-b.grid(column=8,row=0,padx=0, pady=10)
-b = tkinter.Button(master=navf, text="Save", command=save_files)
-b.grid(column=9,row=0,padx=0, pady=10)
-
-
-# Packing order is important. Widgets are processed sequentially and if there
-# is no space left, because the window is too small, they are not displayed.
-# The canvas is rather flexible in its size, so we pack it last which makes
-# sure the UI controls are displayed as long as possible.
-#toolbar.pack(side=tkinter.BOTTOM, fill=tkinter.X)
-#canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=True)
-
-root.protocol("WM_DELETE_WINDOW", on_closing)
-
-
-root.bind("<Left>",back_in_time)
-root.bind("<Right>",forward_in_time)
-root.bind("<Prior>",jump_back_in_time) # page_up
-root.bind("<Next>",jump_forward_in_time) # page_down
-root.bind("<Key>",process_key_events)
-
-make_plot()
-redraw()
-
-
-
-
-
-##
-## Create an additional window for an ERP_like display
-##
-erp_window = Toplevel(root)
-gb['erp_window']=erp_window
-erp_window.wm_title("Physio Event-Related - {}".format(fname))
-erp_window.geometry('{}x{}'.format(450,550))
 
    
 def make_erp_plot():
@@ -1209,7 +971,7 @@ def redraw_erp():
                 ax.plot(plot_t[tsels]-t,
                         ecg[tsels]-baseline,
                         zorder=-10,
-                        color=COLORS.get(c,"#9b0000"),
+                        color=gb['COLORS'].get(c,"#9b0000"),
                         alpha=.9)
 
     if 'erp.template' in gb and len(gb['erp.template']):
@@ -1374,17 +1136,6 @@ def clear_candidates():
 
 
     
-make_erp_plot()
-
-    
-
-##
-## Create an additional window for a Poincare display
-##
-poincare_window = Toplevel(root)
-gb['poincare_window']=poincare_window
-poincare_window.wm_title("Physio Poincare - {} {}".format(fname,gb['channel']))
-poincare_window.geometry('{}x{}'.format(450,400))
 
    
 def make_poincare_plot():
@@ -1445,17 +1196,268 @@ def redraw_poincare():
     plt.tight_layout()
     gb['poincare.canvas'].draw()
 
+
+
+
+
     
-make_poincare_plot()
+
+def main():
+
+
+    # Main window dimensions
+    window_w,window_h=1300,450
+
+
+    # Globals to carry around
+
+    gb["WINDOW_T"] =15 # default window width in seconds
+    gb['WINDOW_SHIFT_T'] =.2 # proportion of the window to shift when we go back and forth in time
+
+
+    gb['qc']={}
+    gb['invalid']= []
+    gb['peaks']= []
+    gb['cursor.t']=0
+    gb['cursor.snap.t']=0
+    gb['cursor.snap']=None
+
+
+
+    ##
+    ##
+    ## Select file to open
+    ##
+    ##
+
+    fname = None
+    if len(sys.argv)>1:
+        fname = sys.argv[1]
+    else:
+
+        filetypes = (
+            ('HDF5 dataset', '*.hdf5'),
+            ('All files', '*.*')
+        )
+
+        fname = fd.askopenfilename(
+            title='Select your recording',
+            initialdir='.',
+            filetypes=filetypes)
+
+    if not fname:
+        print("You need to select a file. Exiting now.")
+        sys.exit(-1)
+
+
+    if not os.path.exists(fname):
+
+        ok = False
+        for addon in ['.hdf5','hdf5']:
+            if os.path.exists(fname+addon):
+                fname = fname+addon
+                ok = True
+                continue
+        if not ok:
+            print("File {} does not seem to exist. Exiting now.".format(fname))
+            sys.exit(-1)
+
+
+
+
+    ###
+    ### Read the data
+    ###
+    print("Opening file {}".format(fname))
+
+    import biobabel as bb
+    #from hdphysio5 import read_h5py
+    # Submodule, load from https://github.com/florisvanvugt/hdphysio5
+
+    bio       = bb.load(fname)
+
+    bio.print()
+
+
+
+
+    fields = bio.find_channels({'modality':'ecg'})
+    fields.sort()
+    if len(fields)>1:
+
+        if len(sys.argv)>2:
+            pc = sys.argv[2]
+        else:
+            pc = misc.give_choices(fields)
+    else:
+        pc = fields[0]
+
+
+    if pc:
+        gb['channel'] = pc
+        gb['t']=bio.get_time(pc)
+        hdr,dat = bio.get(pc)
+        gb['SR']=hdr['sampling_frequency']
+        gb['hdr']=hdr
+
+        # Also make a filtered version
+        METHOD = 'engzeemod2012'
+        #METHOD = 'neurokit2'
+        #METHOD
+        print("Filtering ECG signal using {} procedure in neurokit2".format(METHOD))
+        signal_flt = neurokit2.ecg_clean(dat,sampling_rate=gb['SR'],method=METHOD)
+
+        #sos = butter(15, 3, 'low', fs=gb['SR'], output='sos')
+        #filtd = signal.sosfiltfilt(sos, dat)
+        #gb['filtered']=filtd
+        gb['raw']=dat
+        gb['signal']=signal_flt
+
+    else:
+        sys.exit(-1)
+
+
+
+    # See if there is an existing peak file
+    gb['JSON_OUT'] = '{}_peaks.json'.format(fname)
+    if os.path.exists(gb['JSON_OUT']):
+        with open(gb['JSON_OUT'],'r') as f:
+            gb['qc']      = json.loads(f.read())
+            gb['invalid'] = gb['qc'].get('invalid',{}).get(gb['channel'],[])
+            gb['peaks']   = gb['qc'].get('peaks',{}).get(gb['channel'],[])
+
+    # Reconstruct peak samples
+    for p in gb['peaks']:
+        p['i']=int(round(p['t']*gb['SR']))
+        p['y']=get_signal_at_t(p['t'])#biodata.bio[ gb['ecg-prep-column'] ][p['i']]
+
+    # Curate invalid
+    gb['invalid'] = curate_invalid(gb['invalid'])
+
+
+    SUMMARY_OUT = '{}_{}_summary.csv'.format(fname,gb['channel'].replace('/','_'))
+
+
+
+        
+
+    # Create the interface
+        
+    root = tkinter.Tk()
+    root.wm_title("Physio Peak Picker - {}".format(fname))
+    root.geometry('{}x{}'.format(window_w,window_h))
+    gb['root']=root
+
+
+    gb['COLORS'] = {}
+
+
+
+
+    gb['tstart']=0 # the left edge of the window we're currently showing
+
+    # Current markers
+    gb['mark_in']  =None
+    gb['mark_out'] =None
+
+        
+
+
+    if 'peaks' not in gb:
+        gb['peaks']=[]
+
+
+
+    # Build the interface
+    
+    navf = tkinter.Frame(root)
+    tkinter.Grid.columnconfigure(navf, 0, weight=1)
+    navf.pack(side=tkinter.BOTTOM)
+    bigfont = tkFont.Font(family='Helvetica', size=28, weight='bold')
+    button_wid  = tkinter.Button(master=navf, text="+", command=window_wider,    font=bigfont)
+    button_narr = tkinter.Button(master=navf, text="-", command=window_narrower, font=bigfont)
+    button_wid.grid(column=0,row=0,padx=0, pady=10)
+    button_narr.grid(column=1,row=0,padx=0, pady=10)
+
+
+    button_back = tkinter.Button(master=navf, text="<", command=back_in_time, font=bigfont)
+    button_forw = tkinter.Button(master=navf, text=">", command=forward_in_time, font=bigfont)
+    button_back.grid(column=2,row=0,padx=10, pady=10)
+    button_forw.grid(column=4,row=0,padx=10, pady=10)
+
+    slider_update = tkinter.Scale(
+        navf,
+        from_=0,
+        to=get_n_windows(),
+        length=300,
+        orient=tkinter.HORIZONTAL,
+        label="")
+    slider_update.bind("<ButtonRelease-1>",set_window)
+    slider_update.grid(column=3,row=0,padx=10,pady=10)
+    gb['slider']=slider_update
+
+
+
+
+    b = tkinter.Button(master=navf, text="Auto Detect", command=auto_detect_peaks)
+    b.grid(column=5,row=0,padx=10, pady=10)
+    b = tkinter.Button(master=navf, text="Clear all", command=clear_peaks)
+    b.grid(column=6,row=0,padx=0, pady=10)
+    b = tkinter.Button(master=navf, text="Clear here", command=clear_peaks_here)
+    b.grid(column=7,row=0,padx=0, pady=10)
+    b = tkinter.Button(master=navf, text="Load biopac peaks", command=import_biopac_peaks)
+    b.grid(column=8,row=0,padx=0, pady=10)
+    b = tkinter.Button(master=navf, text="Save", command=save_files)
+    b.grid(column=9,row=0,padx=0, pady=10)
+
+
+    # Packing order is important. Widgets are processed sequentially and if there
+    # is no space left, because the window is too small, they are not displayed.
+    # The canvas is rather flexible in its size, so we pack it last which makes
+    # sure the UI controls are displayed as long as possible.
+    #toolbar.pack(side=tkinter.BOTTOM, fill=tkinter.X)
+    #canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=True)
+
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+
+
+    root.bind("<Left>",back_in_time)
+    root.bind("<Right>",forward_in_time)
+    root.bind("<Prior>",jump_back_in_time) # page_up
+    root.bind("<Next>",jump_forward_in_time) # page_down
+    root.bind("<Key>",process_key_events)
+
+    make_plot()
+    redraw()
 
 
 
 
 
+    ##
+    ## Create an additional window for an ERP_like display
+    ##
+    erp_window = Toplevel(root)
+    gb['erp_window']=erp_window
+    erp_window.wm_title("Physio Event-Related - {}".format(fname))
+    erp_window.geometry('{}x{}'.format(450,550))
+
+    make_erp_plot()
 
 
 
-tkinter.mainloop()
+    ##
+    ## Create an additional window for a Poincare display
+    ##
+    poincare_window = Toplevel(root)
+    gb['poincare_window']=poincare_window
+    poincare_window.wm_title("Physio Poincare - {} {}".format(fname,gb['channel']))
+    poincare_window.geometry('{}x{}'.format(450,400))
+
+    make_poincare_plot()
+
+
+    tkinter.mainloop()
 
 
 

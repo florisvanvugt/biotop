@@ -1,8 +1,5 @@
 # Physio Peak Picker
 
-
-**This project has been migrated to https://github.com/florisvanvugt/woodpecker**
-
 A simple GUI for human-assisted semiautomatic ECG analysis.
 
 **Purpose** ECG analysis of real-world data can be tricky, especially when there are lots of artefacts.
@@ -21,19 +18,11 @@ The results are saved in a JSON file format.
 
 * Python 3.X 
 
-This should install most of what you need:
+Prerequisite packages are installed automatically using the following:
 
 ```
-pip3 install neurokit2 py-ecg-detectors matplotlib scipy numpy
-python -m pip install "biobabel @ git+https://github.com/florisvanvugt/biobabel"
+pip install "woodpecker @ git+https://github.com/florisvanvugt/woodpecker"
 ```
-
-This also uses [HDPhysio5, a python-based library for the physiology HDF5 specification](https://github.com/florisvanvugt/hdphysio5), which will be loaded as a submodule.
-
-```
-git clone https://github.com/florisvanvugt/physio_peak_picker.git
-```
-
 
 
 
@@ -42,13 +31,13 @@ git clone https://github.com/florisvanvugt/physio_peak_picker.git
 For ECG analysis:
 
 ```
-python3 peak_picker.py
+woodpecker
 ```
 
 For respiration analysis:
 
 ```
-python3 respiration_picker.py
+respirecker
 ```
 
 
@@ -69,7 +58,5 @@ python3 respiration_picker.py
    * PageDown/PageUp keys browse through the signal a full window at a time
 
 
-## File format
 
-This uses a custom file format based on the HDF5 framework, explained in `specification_hdf5.md`
 

@@ -25,86 +25,8 @@ from scipy import signal
 import json
 
 import neurokit2 as nk
+import woodpecker.misc as misc
 
-##
-##
-## Select file to open
-##
-##
-
-fname = None
-if len(sys.argv)>1:
-    fname = sys.argv[1]
-else:
-
-    filetypes = (
-        ('HDF5 dataset', '*.hdf5'),
-        ('All files', '*.*')
-    )
-
-    fname = fd.askopenfilename(
-        title='Select your recording',
-        initialdir='.',
-        filetypes=filetypes)
-
-if not fname:
-    print("You need to select a file. Exiting now.")
-    sys.exit(-1)
-
-
-if not os.path.exists(fname):
-
-    ok = False
-    for addon in ['.hdf5','hdf5']:
-        if os.path.exists(fname+addon):
-            fname = fname+addon
-            ok = True
-            continue
-    if not ok:
-        print("File {} does not seem to exist. Exiting now.".format(fname))
-        sys.exit(-1)
-    
-
-print("Opening file {}".format(fname))
-bio = bb.load(fname)
-bio.print()
-# Globals to carry around
-gb = {}
-gb['bio']=bio
-gb['peaks']=[]
-
-
-
-
-
-import misc
-fields = bio.find_channels()
-fields.sort()
-if len(fields)>1:
-
-    if len(sys.argv)>2:
-        pc = sys.argv[2]
-    else:
-        pc = misc.give_choices(fields)
-else:
-    pc = fields[0]
-
-if pc:
-    gb['channel'] = pc
-    gb['t']=bio.get_time(pc)
-    hdr,dat = bio.get(pc)
-    gb['SR']=hdr['sampling_frequency']
-    gb['hdr']=hdr
-
-    # Also make a filtered version
-    sos = butter(15, 3, 'low', fs=gb['SR'], output='sos')
-    filtd = signal.sosfiltfilt(sos, dat)
-    #gb['filtered']=filtd
-    gb['raw']=dat
-    gb['signal']=filtd
-
-else:
-    sys.exit(-1)
 
 
 def get_signal_at_t(t):
@@ -117,35 +39,6 @@ def get_signal_at_t(t):
     #ecg_target = gb['ecg-prep-column']
     return gb['signal'][i]
 
-
-
-# Main window dimensions
-window_w,window_h=1300,400
-
-gb["WINDOW_T"] =25 # default window width in seconds
-gb['WINDOW_SHIFT_T'] =.03 # proportion of the window to shift when we go back and forth in time
-
-gb['qc']={}
-gb['invalid']= []
-gb['cursor.t']=0
-gb['cursor.snap.t']=0
-gb['cursor.snap']=None
-gb['tstart']=0 # the left edge of the window we're currently showing
-gb['mark_in']  =None
-gb['mark_out'] =None
-
-# See if there is an existing peak file
-JSON_OUT = '{}_respire.json'.format(fname)
-if os.path.exists(JSON_OUT):
-    with open(JSON_OUT,'r') as f:
-        gb['qc']      = json.loads(f.read())
-        gb['invalid'] = gb['qc'].get('invalid',{}).get(gb['channel'],[])
-        gb['peaks']   = gb['qc'].get('peaks',{}).get(gb['channel'],[])
-
-# Reconstruct peak samples
-for p in gb['peaks']:
-    p['i']=int(round(p['t']*gb['SR']))
-    p['y']=get_signal_at_t(p['t'])
 
 
 
@@ -162,9 +55,6 @@ def curate_invalid(inv):
     return toret
 
 
-# Curate invalid
-gb['invalid'] = curate_invalid(gb['invalid'])
-
 
 
 
@@ -172,13 +62,6 @@ gb['invalid'] = curate_invalid(gb['invalid'])
 #print(gb)
 
 
-root = tkinter.Tk()
-root.wm_title("Respiration Picker - {}".format(fname))
-root.geometry('{}x{}'.format(window_w,window_h))
-gb['root']=root
-
-
-COLORS = {}
 
 
 def auto_detect_peaks():
@@ -198,7 +81,7 @@ def auto_detect_peaks():
         redraw_all()
 
 
-from misc import chop_away
+from woodpecker.misc import chop_away
 
         
 def find_valid_between(tmin,tmax):
@@ -312,8 +195,8 @@ def save_files():
     gb['qc']['peaks']=pks
     
     json_obj = json.dumps(gb['qc'], indent=4,cls=misc.NpEncoder)
-    print("Saving {}".format(JSON_OUT))
-    with open(JSON_OUT,'w') as f:
+    print("Saving {}".format(gb['JSON_OUT']))
+    with open(gb['JSON_OUT'],'w') as f:
         f.write(json_obj)
 
 
@@ -377,7 +260,7 @@ def build_gui(root):
 
 
     
-from misc import does_overlap
+from woodpecker.misc import does_overlap
 
 TARGET_PLOT_POINTS = 2000
 # how many points to actually plot in the current window (approximately)
@@ -456,7 +339,7 @@ def redraw():
             pch,
             label='cleaned',
             zorder=-10,
-            color=COLORS.get(c,"#9b0000"))
+            color=gb['COLORS'].get(c,"#9b0000"))
 
 
     ## Now plot the raw unfiltered signal
@@ -470,7 +353,7 @@ def redraw():
             label='raw',
             zorder=-15,
             alpha=.3,
-            color=COLORS.get(c,"#999999"))
+            color=gb['COLORS'].get(c,"#999999"))
 
 
     # Indicate the peaks
@@ -1032,12 +915,146 @@ def update_window_definitions():
     gb['slider'].configure(to=nwind)
     
 
+# Globals to carry around
+gb = {}
+
+
+
+
+
+def main():
+
+
+    ##
+    ##
+    ## Select file to open
+    ##
+    ##
+
+    fname = None
+    if len(sys.argv)>1:
+        fname = sys.argv[1]
+    else:
+
+        filetypes = (
+            ('HDF5 dataset', '*.hdf5'),
+            ('All files', '*.*')
+        )
+
+        fname = fd.askopenfilename(
+            title='Select your recording',
+            initialdir='.',
+            filetypes=filetypes)
+
+    if not fname:
+        print("You need to select a file. Exiting now.")
+        sys.exit(-1)
+
+
+    if not os.path.exists(fname):
+
+        ok = False
+        for addon in ['.hdf5','hdf5']:
+            if os.path.exists(fname+addon):
+                fname = fname+addon
+                ok = True
+                continue
+        if not ok:
+            print("File {} does not seem to exist. Exiting now.".format(fname))
+            sys.exit(-1)
+
+
+    print("Opening file {}".format(fname))
+    bio = bb.load(fname)
+    bio.print()
+
+    gb['bio']=bio
+    gb['peaks']=[]
+
+
+
+
+
+    import woodpecker.misc as misc
+    fields = bio.find_channels()
+    fields.sort()
+    if len(fields)>1:
+
+        if len(sys.argv)>2:
+            pc = sys.argv[2]
+        else:
+            pc = misc.give_choices(fields)
+    else:
+        pc = fields[0]
+
+    if pc:
+        gb['channel'] = pc
+        gb['t']=bio.get_time(pc)
+        hdr,dat = bio.get(pc)
+        gb['SR']=hdr['sampling_frequency']
+        gb['hdr']=hdr
+
+        # Also make a filtered version
+        sos = butter(15, 3, 'low', fs=gb['SR'], output='sos')
+        filtd = signal.sosfiltfilt(sos, dat)
+        #gb['filtered']=filtd
+        gb['raw']=dat
+        gb['signal']=filtd
+
+    else:
+        sys.exit(-1)
+
+
+
+
+    # Main window dimensions
+    window_w,window_h=1300,400
+
+    gb["WINDOW_T"] =25 # default window width in seconds
+    gb['WINDOW_SHIFT_T'] =.03 # proportion of the window to shift when we go back and forth in time
+
+    gb['qc']={}
+    gb['invalid']= []
+    gb['cursor.t']=0
+    gb['cursor.snap.t']=0
+    gb['cursor.snap']=None
+    gb['tstart']=0 # the left edge of the window we're currently showing
+    gb['mark_in']  =None
+    gb['mark_out'] =None
+
+    # See if there is an existing peak file
+    JSON_OUT = '{}_respire.json'.format(fname)
+    if os.path.exists(JSON_OUT):
+        with open(JSON_OUT,'r') as f:
+            gb['qc']      = json.loads(f.read())
+            gb['invalid'] = gb['qc'].get('invalid',{}).get(gb['channel'],[])
+            gb['peaks']   = gb['qc'].get('peaks',{}).get(gb['channel'],[])
+    gb['JSON_OUT']=JSON_OUT
+
+    # Reconstruct peak samples
+    for p in gb['peaks']:
+        p['i']=int(round(p['t']*gb['SR']))
+        p['y']=get_signal_at_t(p['t'])
+
+
+    # Curate invalid
+    gb['invalid'] = curate_invalid(gb['invalid'])
+
+
+
+    root = tkinter.Tk()
+    root.wm_title("Respiration Picker - {}".format(fname))
+    root.geometry('{}x{}'.format(window_w,window_h))
+    gb['root']=root
+
+
+    gb['COLORS'] = {}
 
     
 
-build_gui(root)
-make_plot()
-tkinter.mainloop()
+    build_gui(root)
+    make_plot()
+    tkinter.mainloop()
 
     
 
