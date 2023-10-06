@@ -17,7 +17,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
 
-import woodpecker.preprocess_ecg_detectors as preprocess_ecg
+import biotop.preprocess_ecg_detectors as preprocess_ecg
 
 import numpy as np
 import pandas as pd
@@ -29,9 +29,9 @@ import json
 
 import sys
 
-from woodpecker.misc import does_overlap
+from biotop.misc import does_overlap
 
-import woodpecker.misc as misc
+import biotop.misc as misc
 
 
 # Globals we carry around
@@ -80,7 +80,7 @@ def do_auto_detect_peaks():
 
 
 
-from woodpecker.misc import chop_away
+from biotop.misc import chop_away
 
         
 def find_valid_between(tmin,tmax):

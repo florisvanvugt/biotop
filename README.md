@@ -1,4 +1,4 @@
-# Woodpecker: picking peaks in physiological data 
+# biotop: picking peaks in physiological data 
 
 A simple GUI for human-assisted semiautomatic ECG and respiration preprocessing.
 
@@ -21,7 +21,7 @@ The results are saved in a JSON file format.
 Prerequisite packages are installed automatically using the following:
 
 ```
-pip install "woodpecker @ git+https://github.com/florisvanvugt/woodpecker"
+pip install "biotop @ git+https://github.com/florisvanvugt/biotop"
 ```
 
 
@@ -31,13 +31,13 @@ pip install "woodpecker @ git+https://github.com/florisvanvugt/woodpecker"
 For ECG analysis:
 
 ```
-woodpecker
+biotop
 ```
 
 For respiration analysis:
 
 ```
-respirecker
+respire
 ```
 
 

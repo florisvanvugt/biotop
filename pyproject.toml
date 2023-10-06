@@ -1,6 +1,6 @@
 [project]
 
-name = "woodpecker"
+name = "biotop"
 
 version = "0.5"  
 
@@ -42,8 +42,8 @@ dependencies = [
 
 
 [project.scripts]  # Optional
-woodpecker = "woodpecker:ecg"
-respirecker = "woodpecker:respire"
+biotop = "biotop:ecg"
+respire = "biotop:respire"
 
 
 

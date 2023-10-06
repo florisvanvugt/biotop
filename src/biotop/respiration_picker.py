@@ -25,7 +25,7 @@ from scipy import signal
 import json
 
 import neurokit2 as nk
-import woodpecker.misc as misc
+import biotop.misc as misc
 
 
 
@@ -81,7 +81,7 @@ def auto_detect_peaks():
         redraw_all()
 
 
-from woodpecker.misc import chop_away
+from biotop.misc import chop_away
 
         
 def find_valid_between(tmin,tmax):
@@ -260,7 +260,7 @@ def build_gui(root):
 
 
     
-from woodpecker.misc import does_overlap
+from biotop.misc import does_overlap
 
 TARGET_PLOT_POINTS = 2000
 # how many points to actually plot in the current window (approximately)
@@ -975,7 +975,7 @@ def main():
 
 
 
-    import woodpecker.misc as misc
+    import biotop.misc as misc
     fields = bio.find_channels()
     fields.sort()
     if len(fields)>1:
