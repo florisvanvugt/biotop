@@ -68,6 +68,7 @@ def auto_detect_peaks():
 
     drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
     tmin,tmax = drawrange
+    tmin = max([0,tmin]) # don't go below zero
     peaks_here = [ p for p in gb['peaks'] if p['t']>=tmin and p['t']<=tmax ]
     
     if len(peaks_here):

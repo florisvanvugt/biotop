@@ -48,13 +48,15 @@ def do_auto_detect_peaks():
     ## First clear the peaks in the current window
     drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
     tmin,tmax = drawrange
+    tmin = max([0,tmin]) # don't go below zero
     gb['peaks'] = [ p for p in gb['peaks']
                     if p['t']<tmin or p['t']>tmax ]
-
-
+    print(tmin,tmax)
+    
     ## Now, find the valid portions of signal in the current window.
     ranges = find_valid_between(tmin,tmax)
 
+    ## Find the time corresponding to the beginning of the 
     t = gb['t']
 
     for (fromt,tot) in ranges:
