@@ -21,7 +21,7 @@ The results are saved in a JSON file format.
 Prerequisite packages are installed automatically using the following:
 
 ```
-pip install "biotop @ git+https://github.com/florisvanvugt/biotop"
+python3 -m pip install biotop
 ```
 
 
@@ -59,4 +59,14 @@ respire
 
 
 
+
+
+
+# Development
+
+Install from Github:
+
+```
+pip install "biotop @ git+https://github.com/florisvanvugt/biotop"
+```
 

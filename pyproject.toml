@@ -30,18 +30,18 @@ dependencies = [
  "matplotlib",
  "scipy",
  "numpy",
- "biobabel@git+https://github.com/florisvanvugt/biobabel"
+ "biobabel"
 ]
 
 
 [project.urls]
-"Homepage" = "https://github.com/florisvanvugt/woodpecker"
-"Bug Reports" = "https://github.com/florisvanvugt/woodpecker/issues"
-"Source" = "https://github.com/florisvanvugt/woodpecker"
+"Homepage" = "https://github.com/florisvanvugt/biotop"
+"Bug Reports" = "https://github.com/florisvanvugt/biotop/issues"
+"Source" = "https://github.com/florisvanvugt/biotop"
 
 
 
-[project.scripts]  # Optional
+[project.scripts]
 biotop = "biotop:ecg"
 respire = "biotop:respire"
 
@@ -50,7 +50,7 @@ respire = "biotop:respire"
 [build-system]
 # These are the assumed default build requirements from pip:
 # https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
-requires = ["setuptools>=43.0.0", "wheel"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 
