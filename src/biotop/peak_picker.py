@@ -779,14 +779,16 @@ def redraw():
     if 'mark_in' in gb and gb['mark_in']:
         ax.axvline(gb['mark_in'],color='gray',zorder=-99,lw=3)
 
-            
-    for peak in gb['peaks']:
-        if peak['t']>=tmin and peak['t']<=tmax:
+    validpeaks =  [ peak for peak in gb['peaks'] if peak['t']>=tmin and peak['t']<=tmax ]
+    TOO_MANY_PEAKS = len(validpeaks)>100
+
+    if not TOO_MANY_PEAKS:
+        for peak in validpeaks:
             if peak['valid']:
                 ax.axvline(peak['t'],color='gray',zorder=-99,lw=1)
             elif peak['source']=='candidate':
                 ax.axvline(peak['t'],linestyle='--',color='gray',zorder=-99,lw=.5)
-                
+
     # Plot the actual signal
     x = plot_t[tsels]
     y = ecg[tsels]
@@ -808,14 +810,14 @@ def redraw():
             zorder=-10,
             color=gb['COLORS'].get(c,"#9b0000"))
 
-    for peak in gb['peaks']:
-        if peak['t']>=tmin and peak['t']<=tmax:
+    if not TOO_MANY_PEAKS:
+        for peak in validpeaks:
             col = 'green' if peak['valid'] else 'gray'
             marker = 'o'
             if peak['source']=='manual.removed':
                 marker = 'x'
             elif peak['edited']: marker = 's'
-            
+
             ax.plot(peak['t'],peak['y'],
                     marker,
                     mfc=col,
@@ -830,8 +832,9 @@ def redraw():
     #united = [ (t,i) for (t,i) in united if not np.isnan(i) ]
 
     if len(united):
+        pch = 'o-' if not TOO_MANY_PEAKS else '-'
         rax.plot([ t for (t,i) in united],
-                 [ i for (t,i) in united],'o-',clip_on=False)
+                 [ i for (t,i) in united],pch,clip_on=False)
         realvals = [ i for (t,i) in united if np.isfinite(i) ]
         #if len(realvals):
         #    rax.set_ylim(0,1.1*max(realvals))
@@ -1282,17 +1285,23 @@ def main():
 
 
 
-
-    fields = bio.find_channels({'modality':'ecg'})
-    fields.sort()
-    if len(fields)>1:
-
-        if len(sys.argv)>2:
-            pc = sys.argv[2]
-        else:
-            pc = misc.give_choices(fields)
+    if len(sys.argv)>2:
+        pc = sys.argv[2]
+        # Assuming that that is a stream in the dataset
     else:
-        pc = fields[0]
+
+        fields = bio.find_channels({'modality':'ecg'})
+        if not len(fields):
+            fields = bio.find_channels()
+        if not len(fields): # If there are still no fields
+            print("No channels found... exiting.")
+            sys.exit(-1)
+            
+        fields.sort()
+        if len(fields)>1:
+            pc = misc.give_choices(fields)
+        else:
+            pc = fields[0]
 
 
     if pc:
