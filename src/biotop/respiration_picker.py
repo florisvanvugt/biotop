@@ -684,8 +684,10 @@ def on_click(event):
 
             
 
+DPI = 100 # plot DPI (to fix some weird appearance on Mac OS)
 
-    
+
+
 def make_plot():
     # Get the currently selected subplots
     # and show just these.
@@ -694,8 +696,8 @@ def make_plot():
         gb['canvas'].get_tk_widget().destroy()
     except:
         pass
-    
-    fig,axs = plt.subplots(2,1,sharex=True)
+
+    fig,axs = plt.subplots(2,1,sharex=True,dpi=DPI)
     gb['fig']=fig
     gb['axs']=axs[0] # the main plot
     gb['rate.ax']=axs[1] # the plot for the rate

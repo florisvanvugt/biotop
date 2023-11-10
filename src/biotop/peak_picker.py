@@ -687,6 +687,9 @@ def update_window_definitions():
 
 
 
+
+DPI = 100 # plot DPI (to fix some weird appearance on Mac OS)
+
     
 def make_plot():
     # Get the currently selected subplots
@@ -697,7 +700,7 @@ def make_plot():
     except:
         pass
     
-    fig,axs = plt.subplots(2,1,sharex=True)
+    fig,axs = plt.subplots(2,1,sharex=True,dpi=DPI)
     gb['fig']=fig
     gb['axs']=axs[0] # the main plot
     gb['rate.ax']=axs[1] # the plot for the rate
@@ -899,7 +902,7 @@ def make_erp_plot():
     except:
         pass
     
-    fig,axs = plt.subplots(1,1,sharex=True,figsize=(5,5))
+    fig,axs = plt.subplots(1,1,sharex=True,figsize=(5,5),dpi=DPI)
     gb['erp.fig']=fig
     gb['erp.axs']=axs
     canvas = FigureCanvasTkAgg(fig, master=gb['erp_window'])  # A tk.DrawingArea.
@@ -1152,7 +1155,7 @@ def make_poincare_plot():
     except:
         pass
     
-    fig,axs = plt.subplots(1,1,sharex=True)
+    fig,axs = plt.subplots(1,1,sharex=True,dpi=DPI)
     gb['poincare.fig']=fig
     gb['poincare.axs']=axs
     canvas = FigureCanvasTkAgg(fig, master=gb['poincare_window'])
