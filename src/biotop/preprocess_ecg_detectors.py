@@ -88,12 +88,28 @@ def preprocess(biodata,gb,fields=None):
 
 
 
-def peak_detect(signal,SR):
+def peak_detect(signal,SR,detector):
 
-    print("--> Peak detection for ...")
+    print("--> Peak detection using {}".format(detector))
     detectors = Detectors(int(round(SR)))
+
+    d = ['hamilton','christov','engzee','pan_tompkins','swt','two_average']
+
+    det = None
+    if detector=='hamilton': det=detectors.hamilton_detector
+    if detector=='christov': det=detectors.christov_detector
+    if detector=='engzee': det=detectors.engzee_detector
+    if detector=='pan_tompkins': det=detectors.pan_tompkins_detector
+    if detector=='swt': det=detectors.swt_detector
+    if detector=='two_average': det=detectors.two_average_detector
+    if detector=='matched_filter': det=detectors.matched_filter_detector
+    if detector=='wqrs': det=detectors.wqrs_detector
+    if not det:
+        print("# ERROR, unknown detector.")
+        return []
+    
     try:
-        r_peaks = detectors.engzee_detector(signal)  # note that the py-ecg-detectors makers appear to suggest we should use unfiltered ECG
+        r_peaks = det(signal)  # note that the py-ecg-detectors makers appear to suggest we should use unfiltered ECG
     except:
         r_peaks = []
 

@@ -4,7 +4,7 @@
 import tkinter
 from tkinter import filedialog as fd
 from tkinter import font as tkFont  # for convenience
-from tkinter import Toplevel
+from tkinter import Toplevel, Menu, StringVar
 import tkinter.messagebox
 from tkinter.messagebox import askyesno
 
@@ -68,7 +68,7 @@ def do_auto_detect_peaks():
         samp_min = int(round(fromt*gb['SR'])) # calculate what sample the starting point corresponds to
         ecg = gb['signal'][tsels]
 
-        peaks = preprocess_ecg.peak_detect(ecg,gb['SR'])
+        peaks = preprocess_ecg.peak_detect(ecg,gb['SR'],gb['detector'].get())
         gb['peaks'] += [
             {
                 'i':samp+samp_min,
@@ -1413,24 +1413,39 @@ def main():
 
 
 
-    b = tkinter.Button(master=navf, text="Auto Detect", command=auto_detect_peaks)
-    b.grid(column=5,row=0,padx=10, pady=10)
-    b = tkinter.Button(master=navf, text="Clear all", command=clear_peaks)
-    b.grid(column=6,row=0,padx=0, pady=10)
-    b = tkinter.Button(master=navf, text="Clear here", command=clear_peaks_here)
-    b.grid(column=7,row=0,padx=0, pady=10)
-    b = tkinter.Button(master=navf, text="Load biopac peaks", command=import_biopac_peaks)
-    b.grid(column=8,row=0,padx=0, pady=10)
-    b = tkinter.Button(master=navf, text="Save", command=save_files)
-    b.grid(column=9,row=0,padx=0, pady=10)
 
 
-    # Packing order is important. Widgets are processed sequentially and if there
-    # is no space left, because the window is too small, they are not displayed.
-    # The canvas is rather flexible in its size, so we pack it last which makes
-    # sure the UI controls are displayed as long as possible.
-    #toolbar.pack(side=tkinter.BOTTOM, fill=tkinter.X)
-    #canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=True)
+
+    menubar = Menu(root)
+
+    filemenu = Menu(menubar, tearoff=0)
+    #filemenu.add_command(label="Open", command=lambda : None)
+    #filemenu.add_separator()
+    filemenu.add_command(label="Save", command=save_files)
+    filemenu.add_command(label="Exit", command=quit)
+    menubar.add_cascade(label="File", menu=filemenu)
+
+    actionmenu = Menu(menubar, tearoff=0)
+
+    actionmenu.add_command(label="Auto detect",command=auto_detect_peaks)
+    actionmenu.add_separator()
+
+    gb['detector']=StringVar()
+    gb['detector'].set('engzee')
+    # To understand what these detectors mean, see https://github.com/berndporr/py-ecg-detectors
+    for detect in ['hamilton','christov','engzee','pan_tompkins','swt','two_average','matched_filter','wqrs']:
+        actionmenu.add_radiobutton(label='{} detector'.format(detect), variable=gb['detector'], value=detect)
+    
+    actionmenu.add_separator()
+    
+    actionmenu.add_command(label="Clear all",command=clear_peaks)
+    actionmenu.add_command(label="Clear here",command=clear_peaks_here)
+    actionmenu.add_separator()
+    actionmenu.add_command(label="Load Biopac peaks",command=import_biopac_peaks)
+    menubar.add_cascade(label="Peaks", menu=actionmenu)
+
+    root.config(menu=menubar)
+
 
     root.protocol("WM_DELETE_WINDOW", on_closing)
 
