@@ -800,7 +800,7 @@ def redraw():
         ax.axvline(gb['mark_in'],color='gray',zorder=-99,lw=3)
 
     validpeaks =  [ peak for peak in gb['peaks'] if peak['t']>=tmin and peak['t']<=tmax ]
-    TOO_MANY_PEAKS = len(validpeaks)>100
+    TOO_MANY_PEAKS = len(validpeaks)>130
 
     if not TOO_MANY_PEAKS:
         for peak in validpeaks:
@@ -821,7 +821,7 @@ def redraw():
         x,y = x[::factor],y[::factor]
 
     pch = '-'
-    if nplot<100:
+    if nplot<150:
         pch = 'o-'
         
     ax.plot(x,y,
