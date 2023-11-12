@@ -4,7 +4,7 @@
 import tkinter
 from tkinter import filedialog as fd
 from tkinter import font as tkFont  # for convenience
-from tkinter import Toplevel, Menu, StringVar
+from tkinter import Toplevel, Menu, StringVar, Label, Frame
 import tkinter.messagebox
 from tkinter.messagebox import askyesno
 
@@ -44,7 +44,7 @@ gb = {}
 
 
 def do_auto_detect_peaks():
-
+ 
     ## First clear the peaks in the current window
     drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
     tmin,tmax = drawrange
@@ -131,7 +131,18 @@ def clear_peaks_here():
 
 
 
-        
+def create_progress_window():
+    # Create a toplevel window
+    window = Toplevel()
+    window.wm_title("Please wait...")
+    window.geometry('{}x{}'.format(450,300))
+    frame=Frame(window)
+    frame.grid(row=0, column=0, sticky="NW")
+    win_label = Label(window,text='Detecting peaks. This may take some time...\nThis window will close automatically when completed.')
+    win_label.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
+    #win_label.pack()
+    return window
+    
 
     
 def auto_detect_peaks():
@@ -147,8 +158,13 @@ def auto_detect_peaks():
     else:
         answer = True
     if answer:
-        do_auto_detect_peaks()
-        redraw_all()
+
+        win = create_progress_window()
+        def run_analysis():
+            do_auto_detect_peaks()
+            redraw_all()
+            win.destroy()
+        win.after(500, run_analysis)
 
 
 
