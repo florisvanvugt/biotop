@@ -70,3 +70,8 @@ Install from Github:
 pip install "biotop @ git+https://github.com/florisvanvugt/biotop"
 ```
 
+
+
+## Wishlist
+
+- [ ] Show a window when waiting for peak autodetection to complete

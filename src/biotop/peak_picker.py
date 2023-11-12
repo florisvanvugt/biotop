@@ -488,12 +488,27 @@ def process_key_events(event):
     if event.char=='z':
         toggle_zoom()
     if event.char=='a':
-        tmax = max(gb['t'])
-        gb['tstart']=0
-        gb['WINDOW_T']=tmax
-        update_window_definitions()
-        redraw_all()
+        zoom_all()
 
+
+def zoom_all():
+    tmax = max(gb['t'])
+    gb['tstart']=0
+    gb['WINDOW_T']=tmax
+    update_window_definitions()
+    redraw_all()
+
+def micro_zoom():
+    gb['WINDOW_T']=5
+    update_window_definitions(); redraw_all()
+
+def medio_zoom():
+    gb['WINDOW_T']=35
+    update_window_definitions(); redraw_all()
+
+def maxi_zoom():
+    gb['WINDOW_T']=60
+    update_window_definitions(); redraw_all()
 
         
 
@@ -606,6 +621,8 @@ def save_files():
 
 def on_closing():
     save_files()
+    gb['erp_window'].destroy()
+    gb['poincare_window'].destroy()
     gb['root'].destroy()
     sys.exit(0)
     
@@ -1358,7 +1375,7 @@ def main():
     # Create the interface
         
     root = tkinter.Tk()
-    root.wm_title("Physio Peak Picker - {}".format(fname))
+    root.wm_title("Biotop Peak Picker - {} {}".format(fname,gb['channel']))
     root.geometry('{}x{}'.format(window_w,window_h))
     gb['root']=root
 
@@ -1444,6 +1461,16 @@ def main():
     actionmenu.add_command(label="Load Biopac peaks",command=import_biopac_peaks)
     menubar.add_cascade(label="Peaks", menu=actionmenu)
 
+
+    viewmenu = Menu(menubar, tearoff=0)
+    viewmenu.add_command(label="All",command=zoom_all)
+    viewmenu.add_separator()
+    viewmenu.add_command(label="Micro",command=micro_zoom)
+    viewmenu.add_command(label="Medio",command=medio_zoom)
+    viewmenu.add_command(label="Maxi",command=maxi_zoom)
+    menubar.add_cascade(label="View", menu=viewmenu)
+
+    
     root.config(menu=menubar)
 
 
