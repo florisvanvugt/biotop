@@ -1486,6 +1486,15 @@ def main():
     viewmenu.add_command(label="Maxi",command=maxi_zoom)
     menubar.add_cascade(label="View", menu=viewmenu)
 
+
+    tempmenu = Menu(menubar, tearoff=0)
+    tempmenu.add_command(label="Make template",command=capture_erp)
+    tempmenu.add_command(label="Search",command=search_template)
+    tempmenu.add_command(label="Accept candidates",command=accept_search)
+    tempmenu.add_command(label="Clear candidates",command=clear_candidates)
+    menubar.add_cascade(label="Template", menu=tempmenu)
+
+
     
     root.config(menu=menubar)
 
