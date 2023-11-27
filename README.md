@@ -64,10 +64,10 @@ respire
 
 # Development
 
-Install from Github:
+Install latest development version:
 
 ```
-pip install "biotop @ git+https://github.com/florisvanvugt/biotop"
+pip install --upgrade "biotop @ git+https://github.com/florisvanvugt/biotop"
 ```
 
 
