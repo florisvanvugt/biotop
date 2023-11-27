@@ -722,7 +722,7 @@ def update_window_definitions():
 
 
 gb['DPI'] = 100 # plot DPI (to fix some weird appearance on Mac OS)
-gb['PADDING'] = .03
+gb['PADDING'] = .05
 
     
 def make_plot():
@@ -1255,7 +1255,12 @@ def redraw_poincare():
 
 
 
+def set_dpi(dpi):
+    gb['DPI']=dpi
+    make_plot()
+    redraw_all()
 
+    
     
 
 def main():
@@ -1499,6 +1504,12 @@ def main():
     viewmenu.add_command(label="Micro",command=micro_zoom)
     viewmenu.add_command(label="Medio",command=medio_zoom)
     viewmenu.add_command(label="Maxi",command=maxi_zoom)
+    viewmenu.add_separator()
+    dpimenu = Menu(viewmenu, tearoff=0)
+    for dpi in [50,75,100,150,250]:
+        dpimenu.add_command(label="{}".format(dpi),
+                            command=lambda x=dpi: set_dpi(x) )
+    viewmenu.add_cascade(label="Set DPI", menu=dpimenu)
     menubar.add_cascade(label="View", menu=viewmenu)
 
 
