@@ -721,7 +721,8 @@ def update_window_definitions():
 
 
 
-DPI = 100 # plot DPI (to fix some weird appearance on Mac OS)
+gb['DPI'] = 100 # plot DPI (to fix some weird appearance on Mac OS)
+gb['PADDING'] = .03
 
     
 def make_plot():
@@ -733,10 +734,15 @@ def make_plot():
     except:
         pass
     
-    fig,axs = plt.subplots(2,1,sharex=True,dpi=DPI)
+    fig = Figure(dpi=gb['DPI'])
+    gs = fig.add_gridspec(2,1, hspace=0, wspace=0,
+                          left=gb['PADDING'],right=1-gb['PADDING'])
+    axs = gs.subplots(sharex=True,squeeze=True)
     gb['fig']=fig
+
     gb['axs']=axs[0] # the main plot
     gb['rate.ax']=axs[1] # the plot for the rate
+    
     canvas = FigureCanvasTkAgg(fig, master=gb['root'])  # A tk.DrawingArea.
     canvas.get_tk_widget().pack()
     gb['canvas']=canvas
@@ -935,7 +941,11 @@ def make_erp_plot():
     except:
         pass
     
-    fig,axs = plt.subplots(1,1,sharex=True,figsize=(5,5),dpi=DPI)
+    fig = Figure(dpi=gb['DPI'])
+    gs = fig.add_gridspec(1,1, hspace=0, wspace=0,
+                          left=gb['PADDING'],right=1-gb['PADDING'])
+    axs = gs.subplots(sharex=True,squeeze=True)
+
     gb['erp.fig']=fig
     gb['erp.axs']=axs
     canvas = FigureCanvasTkAgg(fig, master=gb['erp_window'])  # A tk.DrawingArea.
@@ -1188,7 +1198,12 @@ def make_poincare_plot():
     except:
         pass
     
-    fig,axs = plt.subplots(1,1,sharex=True,dpi=DPI)
+    #fig,axs = plt.subplots(1,1,sharex=True,dpi=gb['DPI'])
+    fig = Figure(dpi=gb['DPI'])
+    gs = fig.add_gridspec(1,1, hspace=0, wspace=0,
+                          left=gb['PADDING'],right=1-gb['PADDING'])
+    axs = gs.subplots(sharex=True,squeeze=True)
+    
     gb['poincare.fig']=fig
     gb['poincare.axs']=axs
     canvas = FigureCanvasTkAgg(fig, master=gb['poincare_window'])

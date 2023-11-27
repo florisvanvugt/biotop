@@ -684,7 +684,6 @@ def on_click(event):
 
             
 
-DPI = 100 # plot DPI (to fix some weird appearance on Mac OS)
 
 
 
@@ -697,7 +696,12 @@ def make_plot():
     except:
         pass
 
-    fig,axs = plt.subplots(2,1,sharex=True,dpi=DPI)
+    #fig,axs = plt.subplots(2,1,sharex=True,dpi=gb['DPI']
+    fig = Figure(dpi=gb['DPI'])
+    gs = fig.add_gridspec(2,1, hspace=0, wspace=0,
+                          left=gb['PADDING'],right=1-gb['PADDING'])
+    axs = gs.subplots(sharex=True,squeeze=True)
+                           
     gb['fig']=fig
     gb['axs']=axs[0] # the main plot
     gb['rate.ax']=axs[1] # the plot for the rate
@@ -1053,7 +1057,9 @@ def main():
 
     gb['COLORS'] = {}
 
-    
+
+    gb['DPI'] = 100 # default DPI setting
+    gb['PADDING'] = .04
 
     build_gui(root)
     make_plot()
