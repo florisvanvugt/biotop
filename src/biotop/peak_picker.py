@@ -327,7 +327,41 @@ def on_move(event):
         else:
             gb['cursor.snap.t']=None
         update_cursor()
+
+
+
+
+def update_poincare_cursor(i1,i2):
+    if 'poincare.cursor' in gb and not gb['poincare.cursor']==None:
+        gb['poincare.cursor'].set_data([i1], [i2])
+        gb['poincare.canvas'].draw()
+        #print("{} {}".format(i1,i2))
+
+def find_closest_rr(i,j):
+    """ Find the closest RR-interval in the current Poincare plot to the tuple of intervals (i,j) """
+    dists = [ (a-i)**2 + (b-j)**2 for _,(a,b) in gb['rrdata'] ]
+    i = np.argmin(dists)
+    return gb['rrdata'][i]
+        
+
+def on_move_poincare(event):
+    """ Process mouse motion in the Poincare plot """
     
+    if event.xdata and event.ydata:
+        (x,y) = event.xdata,event.ydata
+        t,(i1,i2) = find_closest_rr(x,y)
+        gb['poincare.t']=t
+        update_poincare_cursor(i1,i2)
+        
+def on_click_poincare(event):
+
+    if gb.get('poincare.t',None):
+        t = gb['poincare.t']
+        #print("moving to {}".format(t))
+        # Move main window to that time point
+        move_window_to(t)
+
+        
 
 def on_click(event):
 
@@ -512,7 +546,6 @@ def zoom_all():
     gb['tstart']=0
     gb['WINDOW_T']=tmax
     update_window_definitions()
-    redraw_all()
 
 def micro_zoom():
     gb['WINDOW_T']=5
@@ -701,7 +734,14 @@ def restore_t(t_target,prop):
     tstart = t_target- prop*gb['WINDOW_T']
     #print(tstart)
     return tstart
+
+
+def move_window_to(t):
+    gb['tstart']= restore_t(t,.5) # move that to the center of the screen
+    update_window_definitions()
+    redraw_all()
     
+
 
 def update_window(fact,around_t):
     # Determine what we want to center around
@@ -710,7 +750,6 @@ def update_window(fact,around_t):
     gb['WINDOW_T']*=fact
     gb['tstart']= restore_t(around_t,t_prop)
     update_window_definitions()
-    ##print(gb['tstart'])
     redraw_all()
 
 def window_wider(around_t=None):
@@ -1221,6 +1260,10 @@ def make_poincare_plot():
     gb['poincare.canvas']=canvas
 
     canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=True)
+
+    canvas.mpl_connect('motion_notify_event', on_move_poincare)
+    canvas.mpl_connect('button_press_event', on_click_poincare)
+
     redraw_poincare()
 
 
@@ -1236,21 +1279,26 @@ def redraw_poincare():
     drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
     tmin,tmax = drawrange
 
-    all_invl = get_valid_RR_intervals()#drawrange)
+    all_invl = [ (t,ioi) for (t,ioi) in get_valid_RR_intervals() if not np.isnan(ioi) ] #drawrange)
+    allrr = [ (t,(i1,i2)) for ((t,i1),(_,i2)) in zip(all_invl[:-1],all_invl[1:]) ]
+    gb['rrdata'] = allrr
 
-    for (invl,col,alp) in [
-            ([ i for (t,i) in all_invl if not in_range(t,drawrange) ],'gray',.2),
-            ([ i for (t,i) in all_invl if     in_range(t,drawrange) ], 'darkred',.95),
+    for (invl_seq,col,alp) in [
+            ([ i for (t,i) in allrr if not in_range(t,drawrange) ], 'gray',.2),
+            ([ i for (t,i) in allrr if     in_range(t,drawrange) ], 'darkred',.95),
     ]:
     
-        if len(invl):
-            invl_seq = [ (i1,i2) for (i1,i2) in zip(invl[:-1],invl[1:]) ]
-            n = len(invl)
+        if len(invl_seq):
+            #invl_seq = [ (i1,i2) for (i1,i2) in zip(invl[:-1],invl[1:]) ]
+            n = len(invl_seq)
+            plotsize = 4
+            if n>100: plotsize=3
 
             ax.plot(
                 [ i1 for (i1,i2) in invl_seq ],
                 [ i2 for (i1,i2) in invl_seq ],
                 'o',alpha=alp,
+                markersize=plotsize,
                 color=col
             )
 
@@ -1270,7 +1318,10 @@ def redraw_poincare():
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ##ax.set_xlim(gb['tstart'],gb['tstart']+WINDOW_T)
-    plt.tight_layout()
+    #plt.tight_layout()
+
+    gb['poincare.cursor'] = ax.plot([0],[0],'o',markersize=6,mec='black',mfc='white')[0]
+    
     gb['poincare.canvas'].draw()
 
 
@@ -1451,7 +1502,7 @@ def main():
 
     gb['busy'] = False
         
-
+    gb['rrdata'] = [] # R-R peak data points visible in the Poincare plot
 
     if 'peaks' not in gb:
         gb['peaks']=[]
