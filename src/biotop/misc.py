@@ -42,6 +42,11 @@ def give_choices(choicelist):
 
 
 
+def in_range(t,intv):
+    """ Returns True if t falls in the interval (t0,t1) defined by intv """
+    (t0,t1)=intv
+    return t>=t0 and t<=t1
+
 
 def does_overlap(intv1,intv2):
     # Return whether two intervals overlap

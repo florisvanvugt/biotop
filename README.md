@@ -74,4 +74,6 @@ pip install --upgrade "biotop @ git+https://github.com/florisvanvugt/biotop"
 
 ## Wishlist
 
-- [ ] Show a window when waiting for peak autodetection to complete
+- [x] Show a window when waiting for peak autodetection to complete
+- [ ] Make sure y axis labels remain visible even for greater zoom
+

@@ -29,7 +29,7 @@ import json
 
 import sys
 
-from biotop.misc import does_overlap
+from biotop.misc import does_overlap, in_range
 
 import biotop.misc as misc
 
@@ -530,6 +530,11 @@ def maxi_zoom():
 
 def process_scroll_events(event):
 
+    if gb['busy']:
+        print("not drawing, already busy")
+        return
+    gb['busy']=True
+    
     if 'ctrl' in event.modifiers:
 
         # Zoom
@@ -549,12 +554,17 @@ def process_scroll_events(event):
         if event.step>0:
             forward_in_time()
         
+    gb['busy']=False
 
         
 
 
 
 def get_valid_RR_intervals(trange=None):
+    """ 
+    Returns a list of (t,ioi) tuples indicating the list of intervals (ioi) at
+    each point in time (t).
+    """
     
     if trange:
         tmin,tmax= trange
@@ -1226,13 +1236,24 @@ def redraw_poincare():
     drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
     tmin,tmax = drawrange
 
-    invl = get_valid_RR_intervals(drawrange)
-    if len(invl):
-        invl_seq = [ (i1,i2) for ((_,i1),(_,i2)) in zip(invl[:-1],invl[1:]) ]
+    all_invl = get_valid_RR_intervals()#drawrange)
 
-        ax.plot([ i1 for (i1,i2) in invl_seq ],
-                [ i2 for (i1,i2) in invl_seq ],'o',alpha=.95)
+    for (invl,col,alp) in [
+            ([ i for (t,i) in all_invl if not in_range(t,drawrange) ],'gray',.2),
+            ([ i for (t,i) in all_invl if     in_range(t,drawrange) ], 'darkred',.95),
+    ]:
     
+        if len(invl):
+            invl_seq = [ (i1,i2) for (i1,i2) in zip(invl[:-1],invl[1:]) ]
+            n = len(invl)
+
+            ax.plot(
+                [ i1 for (i1,i2) in invl_seq ],
+                [ i2 for (i1,i2) in invl_seq ],
+                'o',alpha=alp,
+                color=col
+            )
+
     ax.set_xlabel('RR intvl n (s)')
     ax.set_ylabel('RR intvl n+1 (s)')
 
@@ -1427,6 +1448,8 @@ def main():
     gb['mark_in']  =None
     gb['mark_out'] =None
 
+
+    gb['busy'] = False
         
 
 
