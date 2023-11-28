@@ -2,7 +2,7 @@
 
 name = "biotop"
 
-version = "0.5"  
+version = "0.5.1"  
 
 description = "Semi-automated extrema detection in ECG and respiratory signals"
 

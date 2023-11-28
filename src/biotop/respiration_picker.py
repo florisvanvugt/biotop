@@ -6,7 +6,7 @@ import os
 import tkinter
 from tkinter import filedialog as fd
 from tkinter import font as tkFont  # for convenience
-from tkinter import Toplevel
+from tkinter import Toplevel, Menu
 import tkinter.messagebox
 from tkinter.messagebox import askyesno
 
@@ -240,12 +240,48 @@ def build_gui(root):
     b.grid(column=9,row=0,padx=0, pady=10)
 
 
-    # Packing order is important. Widgets are processed sequentially and if there
-    # is no space left, because the window is too small, they are not displayed.
-    # The canvas is rather flexible in its size, so we pack it last which makes
-    # sure the UI controls are displayed as long as possible.
-    #toolbar.pack(side=tkinter.BOTTOM, fill=tkinter.X)
-    #canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=True)
+
+
+
+
+    menubar = Menu(root)
+
+    filemenu = Menu(menubar, tearoff=0)
+    #filemenu.add_command(label="Open", command=lambda : None)
+    #filemenu.add_separator()
+    filemenu.add_command(label="Save", command=save_files)
+    filemenu.add_command(label="Exit", command=quit)
+    menubar.add_cascade(label="File", menu=filemenu)
+
+    actionmenu = Menu(menubar, tearoff=0)
+
+    actionmenu.add_command(label="Auto detect",command=auto_detect_peaks)
+    actionmenu.add_separator()
+    actionmenu.add_command(label="Clear all",command=clear_peaks)
+    actionmenu.add_command(label="Clear here",command=clear_peaks_here)
+    menubar.add_cascade(label="Peaks", menu=actionmenu)
+
+
+    viewmenu = Menu(menubar, tearoff=0)
+    viewmenu.add_command(label="All",command=zoom_all)
+    viewmenu.add_separator()
+    viewmenu.add_command(label="Micro",command=micro_zoom)
+    viewmenu.add_command(label="Medio",command=medio_zoom)
+    viewmenu.add_command(label="Maxi",command=maxi_zoom)
+    viewmenu.add_separator()
+    dpimenu = Menu(viewmenu, tearoff=0)
+    for dpi in [50,75,100,150,250]:
+        dpimenu.add_command(label="{}".format(dpi),
+                            command=lambda x=dpi: set_dpi(x) )
+    viewmenu.add_cascade(label="Set DPI", menu=dpimenu)
+    menubar.add_cascade(label="View", menu=viewmenu)
+
+
+
+    
+    root.config(menu=menubar)
+
+
 
     root.protocol("WM_DELETE_WINDOW", on_closing)
 
@@ -542,7 +578,32 @@ def check_window_zoom(t):
     return True
 
         
-    
+
+
+def zoom_all():
+    tmax = max(gb['t'])
+    gb['tstart']=0
+    gb['WINDOW_T']=tmax
+    update_window_definitions()
+    redraw_all()
+
+def micro_zoom():
+    gb['WINDOW_T']=10
+    update_window_definitions(); redraw_all()
+
+def medio_zoom():
+    gb['WINDOW_T']=100
+    update_window_definitions(); redraw_all()
+
+def maxi_zoom():
+    gb['WINDOW_T']=150
+    update_window_definitions(); redraw_all()
+
+
+
+
+
+
 def on_click(event):
 
     ## Detect which subplot we're clicking to determine what is the signal we want to mark
@@ -838,7 +899,7 @@ def process_key_events(event):
 
 
 # When toggling the zoom, toggle between micro and macro window size
-TOGGLE_WINDOW_SIZES = [ 8, 40 ]
+TOGGLE_WINDOW_SIZES = [ 11, 80 ]
             
 
 def toggle_zoom():
@@ -927,6 +988,10 @@ gb = {}
 
 
 
+def set_dpi(dpi):
+    gb['DPI']=dpi
+    make_plot()
+    redraw_all()
 
 
 def main():
