@@ -362,6 +362,8 @@ def on_click_poincare(event):
         #print("moving to {}".format(t))
         # Move main window to that time point and set medium zoom level
         move_window_to(t,25)
+        gb['cursor.t']=t
+        update_cursor()
 
         
 
@@ -825,6 +827,12 @@ def is_in_invalid(t):
     return False
 
 
+def is_ectopic(ioi):
+    # Following convention, we consider beats as ectopic if they are
+    # shorter than 300ms or longer than 1300ms.
+    # e.g., https://doi.org/10.3390/s22051984
+    return ioi<.3 or ioi>1.3
+
 
 
 TARGET_PLOT_POINTS = 2000
@@ -922,15 +930,40 @@ def redraw():
 
 
             
-
+    ### Now plot the intervals (R-to-R peak)
+            
     united = get_valid_RR_intervals((tmin,tmax))
     #united = [ (t,i) for (t,i) in united if not np.isnan(i) ]
 
     if len(united):
-        pch = 'o-' if not TOO_MANY_PEAKS else '-'
+
         rax.plot([ t for (t,i) in united],
-                 [ i for (t,i) in united],pch,clip_on=False)
-        realvals = [ i for (t,i) in united if np.isfinite(i) ]
+                 [ i for (t,i) in united],
+                 '-',
+                 color='darkblue',
+                 clip_on=False)
+
+        if not TOO_MANY_PEAKS:
+            valids = [ (t,i) for (t,i) in united if not is_ectopic(i) ]
+
+            rax.plot([ t for (t,i) in valids],
+                     [ i for (t,i) in valids],
+                     'o',
+                     color='darkblue',
+                     clip_on=False)
+
+        ectopic = [ (t,i) for (t,i) in united if is_ectopic(i) ]
+
+        if len(ectopic):
+            rax.plot([ t for (t,i) in ectopic],
+                     [ i for (t,i) in ectopic],
+                     'o',color='darkred',
+                     clip_on=False)
+
+            for ioi in [.3,1.3]:
+                rax.axhline(y=ioi,alpha=.3,dashes=(1,4))
+        
+        #realvals = [ i for (t,i) in united if np.isfinite(i) ]
         #if len(realvals):
         #    rax.set_ylim(0,1.1*max(realvals))
     rax.spines['top'].set_visible(False)
