@@ -334,6 +334,7 @@ def on_move(event):
 def update_poincare_cursor(i1,i2):
     if 'poincare.cursor' in gb and not gb['poincare.cursor']==None:
         gb['poincare.cursor'].set_data([i1], [i2])
+        gb['poincare.cursor'].set_alpha(1)
         gb['poincare.canvas'].draw()
         #print("{} {}".format(i1,i2))
 
@@ -354,12 +355,13 @@ def on_move_poincare(event):
         update_poincare_cursor(i1,i2)
         
 def on_click_poincare(event):
+    """ When people click in the Poincare window """
 
     if gb.get('poincare.t',None):
         t = gb['poincare.t']
         #print("moving to {}".format(t))
-        # Move main window to that time point
-        move_window_to(t)
+        # Move main window to that time point and set medium zoom level
+        move_window_to(t,25)
 
         
 
@@ -545,7 +547,7 @@ def zoom_all():
     tmax = max(gb['t'])
     gb['tstart']=0
     gb['WINDOW_T']=tmax
-    update_window_definitions()
+    update_window_definitions(); redraw_all()
 
 def micro_zoom():
     gb['WINDOW_T']=5
@@ -736,8 +738,10 @@ def restore_t(t_target,prop):
     return tstart
 
 
-def move_window_to(t):
+def move_window_to(t,zoom=None):
     gb['tstart']= restore_t(t,.5) # move that to the center of the screen
+    if zoom:
+        gb['WINDOW_T']=zoom
     update_window_definitions()
     redraw_all()
     
@@ -992,7 +996,7 @@ def make_erp_plot():
     
     fig = Figure(dpi=gb['DPI'])
     gs = fig.add_gridspec(1,1, hspace=0, wspace=0,
-                          left=gb['PADDING'],right=1-gb['PADDING'])
+                          left=.13,right=1-gb['PADDING'])
     axs = gs.subplots(sharex=True,squeeze=True)
 
     gb['erp.fig']=fig
@@ -1320,7 +1324,9 @@ def redraw_poincare():
     ##ax.set_xlim(gb['tstart'],gb['tstart']+WINDOW_T)
     #plt.tight_layout()
 
-    gb['poincare.cursor'] = ax.plot([0],[0],'o',markersize=6,mec='black',mfc='white')[0]
+    gb['poincare.cursor'] = ax.plot(
+        [np.mean(lims)],[np.mean(lims)],'+',markersize=8,color='black',alpha=0
+    )[0]
     
     gb['poincare.canvas'].draw()
 
