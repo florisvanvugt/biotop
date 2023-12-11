@@ -613,7 +613,7 @@ def on_click(event):
     t = event.xdata
     if not t: return
 
-    kind = 'none'
+    kind = 'peak' # default extremum type is 'peak'
     if 'shift' in event.modifiers:
         t = snap_to_closest_peak(event.xdata,invert=False)
         kind = 'peak'
