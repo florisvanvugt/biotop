@@ -4,7 +4,7 @@
 import tkinter
 from tkinter import filedialog as fd
 from tkinter import font as tkFont  # for convenience
-from tkinter import Toplevel, Menu, StringVar, Label, Frame
+from tkinter import Toplevel, Menu, StringVar, Label, Frame, BooleanVar
 import tkinter.messagebox
 from tkinter.messagebox import askyesno
 
@@ -24,6 +24,7 @@ import pandas as pd
 import os
 import scipy.signal
 import neurokit2
+import heartpy
 
 import json
 
@@ -51,7 +52,7 @@ def do_auto_detect_peaks():
     tmin = max([0,tmin]) # don't go below zero
     gb['peaks'] = [ p for p in gb['peaks']
                     if p['t']<tmin or p['t']>tmax ]
-    print(tmin,tmax)
+    #print(tmin,tmax)
     
     ## Now, find the valid portions of signal in the current window.
     ranges = find_valid_between(tmin,tmax)
@@ -1371,6 +1372,36 @@ def set_dpi(dpi):
     make_plot()
     redraw_all()
 
+
+
+def update_filter():
+    refilter()
+    make_plot()
+    redraw_all()
+    
+
+NEUROKIT2_CLEANERS = ['biosppy', 'pantompkins1985', 'hamilton2002', 'elgendi2010', 'engzeemod2012']
+
+def refilter():
+
+    signal_flt = gb['raw'] # Always start from the raw signal
+    
+    # Also make a filtered version
+    for nkproc in NEUROKIT2_CLEANERS:
+
+        nm = 'neurokit2-{}'.format(nkproc)
+        if gb[nm].get():
+            METHOD=nkproc
+            print("Filtering ECG signal using {} procedure in neurokit2".format(METHOD))
+            signal_flt = neurokit2.ecg_clean(signal_flt,sampling_rate=gb['SR'],method=METHOD)
+
+    if gb['heartpy_wander_remov'].get():
+        signal_flt = heartpy.remove_baseline_wander(signal_flt,gb['SR'])
+
+    gb['signal']=signal_flt
+
+
+
     
     
 
@@ -1471,28 +1502,23 @@ def main():
             pc = fields[0]
 
 
-    if pc:
-        gb['channel'] = pc
-        gb['t']=bio.get_time(pc)
-        hdr,dat = bio.get(pc)
-        gb['SR']=hdr['sampling_frequency']
-        gb['hdr']=hdr
-
-        # Also make a filtered version
-        METHOD = 'engzeemod2012'
-        #METHOD = 'neurokit2'
-        #METHOD
-        print("Filtering ECG signal using {} procedure in neurokit2".format(METHOD))
-        signal_flt = neurokit2.ecg_clean(dat,sampling_rate=gb['SR'],method=METHOD)
-
-        #sos = butter(15, 3, 'low', fs=gb['SR'], output='sos')
-        #filtd = signal.sosfiltfilt(sos, dat)
-        #gb['filtered']=filtd
-        gb['raw']=dat
-        gb['signal']=signal_flt
-
-    else:
+    if not pc:
         sys.exit(-1)
+
+        
+    gb['channel'] = pc
+    gb['t']=bio.get_time(pc)
+    hdr,dat = bio.get(pc)
+    gb['SR']=hdr['sampling_frequency']
+    gb['hdr']=hdr
+
+        
+    #sos = butter(15, 3, 'low', fs=gb['SR'], output='sos')
+    #filtd = signal.sosfiltfilt(sos, dat)
+    #gb['filtered']=filtd
+    gb['raw']=dat
+    gb['signal']=dat
+
 
 
 
@@ -1581,7 +1607,6 @@ def main():
 
 
 
-
     menubar = Menu(root)
 
     filemenu = Menu(menubar, tearoff=0)
@@ -1591,6 +1616,25 @@ def main():
     filemenu.add_command(label="Exit", command=quit)
     menubar.add_cascade(label="File", menu=filemenu)
 
+    
+    prepmenu = Menu(menubar, tearoff=0)
+
+    gb['heartpy_wander_remov'] = BooleanVar()
+    gb['heartpy_wander_remov'].set(True)
+    prepmenu.add_checkbutton(label="Baseline wander removal", onvalue=1, offvalue=0, variable=gb['heartpy_wander_remov'], command=update_filter)
+    prepmenu.add_separator()
+    
+    for nkproc in NEUROKIT2_CLEANERS:
+
+        nm = 'neurokit2-{}'.format(nkproc)
+        gb[nm] = BooleanVar()
+        gb[nm].set(False)
+        prepmenu.add_checkbutton(label="Neurokit2 {}".format(nkproc),
+                                 onvalue=1, offvalue=0, variable=gb[nm],
+                                 command=update_filter)
+    
+    menubar.add_cascade(label="Preprocessing", menu=prepmenu)
+    
     actionmenu = Menu(menubar, tearoff=0)
 
     actionmenu.add_command(label="Auto detect",command=auto_detect_peaks)
@@ -1647,6 +1691,9 @@ def main():
     root.bind("<Next>",jump_forward_in_time) # page_down
     root.bind("<Key>",process_key_events)
 
+
+    refilter()
+    
     make_plot()
     redraw()
 
