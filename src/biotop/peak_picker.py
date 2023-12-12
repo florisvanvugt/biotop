@@ -518,7 +518,7 @@ def on_click(event):
 
 
 # When toggling the zoom, toggle between micro and macro window size
-TOGGLE_WINDOW_SIZES = [ 1.5, 30 ]
+TOGGLE_WINDOW_SIZES = [ 1.5, 25 ]
             
 
 def toggle_zoom():
@@ -557,7 +557,7 @@ def micro_zoom():
     update_window_definitions(); redraw_all()
 
 def medio_zoom():
-    gb['WINDOW_T']=35
+    gb['WINDOW_T']=30
     update_window_definitions(); redraw_all()
 
 def maxi_zoom():
@@ -1401,6 +1401,10 @@ def refilter():
     gb['signal']=signal_flt
 
 
+    for p in gb['peaks']:
+        p['y']=get_signal_at_t(p['t'])#biodata.bio[ gb['ecg-prep-column'] ][p['i']]
+    
+
 
     
     
@@ -1533,7 +1537,6 @@ def main():
     # Reconstruct peak samples
     for p in gb['peaks']:
         p['i']=int(round(p['t']*gb['SR']))
-        p['y']=get_signal_at_t(p['t'])#biodata.bio[ gb['ecg-prep-column'] ][p['i']]
 
     # Curate invalid
     gb['invalid'] = curate_invalid(gb['invalid'])
@@ -1643,7 +1646,9 @@ def main():
     gb['detector']=StringVar()
     gb['detector'].set('engzee')
     # To understand what these detectors mean, see https://github.com/berndporr/py-ecg-detectors
-    for detect in ['hamilton','christov','engzee','pan_tompkins','swt','two_average','matched_filter','wqrs']:
+    for detect in ['neurokit',
+                   # ECG-Detectors
+                   'hamilton','christov','engzee','pan_tompkins','swt','two_average','matched_filter','wqrs']:
         actionmenu.add_radiobutton(label='{} detector'.format(detect), variable=gb['detector'], value=detect)
     
     actionmenu.add_separator()

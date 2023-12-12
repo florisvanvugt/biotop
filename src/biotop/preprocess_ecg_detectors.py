@@ -50,6 +50,7 @@ FILTER = True  # possibly better without?
 
 
 def preprocess(biodata,gb,fields=None):
+    ## DEPRECATED
     res = {}
     bio = biodata.bio
     SR = biodata.SR
@@ -90,6 +91,15 @@ def preprocess(biodata,gb,fields=None):
 
 def peak_detect(signal,SR,detector):
 
+    if detector=="neurokit":
+        signals, info = neurokit2.ecg_peaks(signal,
+                                            sampling_rate=SR,
+                        method="neurokit",
+                        correct_artifacts=False)
+        pks = info['ECG_R_Peaks']
+        return pks
+
+    
     print("--> Peak detection using {}".format(detector))
     detectors = Detectors(int(round(SR)))
 
