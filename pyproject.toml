@@ -30,7 +30,8 @@ dependencies = [
  "matplotlib",
  "scipy",
  "numpy",
- "biobabel"
+ "biobabel",
+ "heartpy"
 ]
 
 
