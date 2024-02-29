@@ -342,6 +342,7 @@ def update_poincare_cursor(i1,i2):
 def find_closest_rr(i,j):
     """ Find the closest RR-interval in the current Poincare plot to the tuple of intervals (i,j) """
     dists = [ (a-i)**2 + (b-j)**2 for _,(a,b) in gb['rrdata'] ]
+    if len(dists)==0: return None
     i = np.argmin(dists)
     return gb['rrdata'][i]
         
@@ -351,9 +352,11 @@ def on_move_poincare(event):
     
     if event.xdata and event.ydata:
         (x,y) = event.xdata,event.ydata
-        t,(i1,i2) = find_closest_rr(x,y)
-        gb['poincare.t']=t
-        update_poincare_cursor(i1,i2)
+        res = find_closest_rr(x,y)
+        if res:
+            t,(i1,i2) = res
+            gb['poincare.t']=t
+            update_poincare_cursor(i1,i2)
         
 def on_click_poincare(event):
     """ When people click in the Poincare window """
