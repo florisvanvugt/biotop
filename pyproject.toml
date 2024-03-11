@@ -27,7 +27,7 @@ maintainers = [
 dependencies = [
  "neurokit2",
  "py-ecg-detectors",
- "matplotlib",
+ "matplotlib>3.7.0",
  "scipy",
  "numpy",
  "biobabel",
