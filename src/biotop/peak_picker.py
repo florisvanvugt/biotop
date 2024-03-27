@@ -1088,32 +1088,42 @@ def redraw_erp():
 
     ax.axhline(y=0,lw=.5,color='gray')
     ax.axvline(x=0,lw=.5,color='gray')
-    
+
+    pks = []
     for peak in gb['peaks']:
         t = peak['t']
         if peak['valid'] and t>=tmin and t<=tmax:
             # Draw this peak!
+            pks.append(peak)
 
-            tpre  = t-ERP_PRE
-            tpost = t+ERP_POST
+    # Trim down if too big (takes a looooong time to draw otherwise)
+    fact = int(len(pks)/40)  # the number indicates how many peaks approximately we want to draw
+    if fact>1:
+        pks = pks[::fact]
             
-            # Ensure that it does not overlap with an invalid portion
-            do_plot = True
-            for i,(s,t0,t1) in enumerate(gb['invalid']):
-                if does_overlap( (t0,t1), (tpre,tpost) ):
-                    do_plot = False
+    for peak in pks:
 
-            if do_plot:
-                tsels = (plot_t>=tpre) & (plot_t<=tpost)
+        t = peak['t']
+        tpre  = t-ERP_PRE
+        tpost = t+ERP_POST
 
-                tpre_sels = (plot_t>=tpre) & (plot_t<=t)
-                baseline = np.mean(ecg[tpre_sels])
+        # Ensure that it does not overlap with an invalid portion
+        do_plot = True
+        for i,(s,t0,t1) in enumerate(gb['invalid']):
+            if does_overlap( (t0,t1), (tpre,tpost) ):
+                do_plot = False
 
-                ax.plot(plot_t[tsels]-t,
-                        ecg[tsels]-baseline,
-                        zorder=-10,
-                        color=gb['COLORS'].get(c,"#9b0000"),
-                        alpha=.9)
+        if do_plot:
+            tsels = (plot_t>=tpre) & (plot_t<=tpost)
+
+            tpre_sels = (plot_t>=tpre) & (plot_t<=t)
+            baseline = np.mean(ecg[tpre_sels])
+
+            ax.plot(plot_t[tsels]-t,
+                    ecg[tsels]-baseline,
+                    zorder=-10,
+                    color=gb['COLORS'].get(c,"#9b0000"),
+                    alpha=.9)
 
     if 'erp.template' in gb and len(gb['erp.template']):
         meanerp=gb['erp.template']
@@ -1322,6 +1332,7 @@ def redraw_poincare():
 
     all_invl = [ (t,ioi) for (t,ioi) in get_valid_RR_intervals() if not np.isnan(ioi) ] #drawrange)
     allrr = [ (t,(i1,i2)) for ((t,i1),(_,i2)) in zip(all_invl[:-1],all_invl[1:]) ]
+
     gb['rrdata'] = allrr
 
     for (invl_seq,col,alp) in [
