@@ -359,7 +359,10 @@ def on_move_poincare(event):
             update_poincare_cursor(i1,i2)
         
 def on_click_poincare(event):
-    """ When people click in the Poincare window """
+    """ 
+    When people click in the Poincare window,
+    move to the corresponding location in the main time window.
+    """
 
     if gb.get('poincare.t',None):
         t = gb['poincare.t']
@@ -745,9 +748,9 @@ def restore_t(t_target,prop):
 
 
 def move_window_to(t,zoom=None):
-    gb['tstart']= restore_t(t,.5) # move that to the center of the screen
     if zoom:
         gb['WINDOW_T']=zoom
+    gb['tstart']= restore_t(t,.5) # move that to the center of the screen
     update_window_definitions()
     redraw_all()
     
