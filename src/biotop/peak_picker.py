@@ -122,6 +122,9 @@ def clear_peaks():
 
         
 def clear_peaks_here():
+    """
+    Clear peaks in the time range currently visible in the window
+    """
     drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
     tmin,tmax = drawrange
     gb['peaks'] = [ p for p in gb['peaks']
@@ -869,6 +872,7 @@ def redraw():
     #ecg_target = gb['ecg-prep-column']
     ecg = gb['signal'] #biodata.bio[ecg_target] # gb['ecg_clean']
     ##print(ecg.shape)
+    ##print(ecg)
     
     #prep = biodata.preprocessed[ecg_target]
     tsels = (gb['t']>=tmin) & (gb['t']<=tmax)
@@ -903,6 +907,9 @@ def redraw():
     x = plot_t[tsels]
     y = ecg[tsels]
 
+    #print(x)
+    #print(y)
+    
     nplot = sum(tsels) ## the number of samples we'd plot if we don't do sub-sampling
     #print("Plotting {}".format(nplot))
     
@@ -970,9 +977,6 @@ def redraw():
             for ioi in [.3,1.3]:
                 rax.axhline(y=ioi,alpha=.3,dashes=(1,4))
         
-        #realvals = [ i for (t,i) in united if np.isfinite(i) ]
-        #if len(realvals):
-        #    rax.set_ylim(0,1.1*max(realvals))
     rax.spines['top'].set_visible(False)
     rax.spines['right'].set_visible(False)
     rax.set_ylabel('R-R interval (s)')
@@ -987,7 +991,7 @@ def redraw():
 
 
     # Now determine the ylim scale
-    AUTOSCALE = False # whether to use the matplotlib default scale
+    AUTOSCALE = False #False # whether to use the matplotlib default scale
     if not AUTOSCALE:
 
         ## Remove the "invalid" portions of the signal too
@@ -1399,9 +1403,12 @@ def update_filter():
 
 NEUROKIT2_CLEANERS = ['biosppy', 'pantompkins1985', 'hamilton2002', 'elgendi2010', 'engzeemod2012']
 
+
+
+
 def refilter():
 
-    signal_flt = gb['raw'] # Always start from the raw signal
+    signal_pre = gb['raw'] # Always start from the raw signal
     
     # Also make a filtered version
     for nkproc in NEUROKIT2_CLEANERS:
@@ -1410,13 +1417,20 @@ def refilter():
         if gb[nm].get():
             METHOD=nkproc
             print("Filtering ECG signal using {} procedure in neurokit2".format(METHOD))
-            signal_flt = neurokit2.ecg_clean(signal_flt,sampling_rate=gb['SR'],method=METHOD)
+            signal_pre = neurokit2.ecg_clean(signal_pre,sampling_rate=gb['SR'],method=METHOD)
 
+    signal_flt = signal_pre
     if gb['heartpy_wander_remov'].get():
-        signal_flt = heartpy.remove_baseline_wander(signal_flt,gb['SR'])
+        ##print(signal_pre)
+        signal_flt = heartpy.remove_baseline_wander(signal_pre,gb['SR'])
+        ##print("Baseline wander removal")
+        ##print(signal_flt)
+        prop_ok = np.mean(~np.isnan(signal_flt))
+        ##print(prop_ok)
+        if prop_ok<.5: # if there is not enough signal left
+            signal_flt = signal_pre # restore signal before baseline wander correction
 
     gb['signal']=signal_flt
-
 
     for p in gb['peaks']:
         p['y']=get_signal_at_t(p['t'])#biodata.bio[ gb['ecg-prep-column'] ][p['i']]
@@ -1523,9 +1537,11 @@ def main():
             pc = fields[0]
 
 
-    if not pc:
+    if not pc: # if no column was selected
         sys.exit(-1)
 
+
+    print("Opening channel {}".format(pc))
         
     gb['channel'] = pc
     gb['t']=bio.get_time(pc)
@@ -1537,10 +1553,10 @@ def main():
     #sos = butter(15, 3, 'low', fs=gb['SR'], output='sos')
     #filtd = signal.sosfiltfilt(sos, dat)
     #gb['filtered']=filtd
-    gb['raw']=dat
-    gb['signal']=dat
+    gb['raw']=dat.copy()
+    gb['signal']=dat.copy()
 
-
+    ##print(gb['signal'])
 
 
     # See if there is an existing peak file
@@ -1661,7 +1677,7 @@ def main():
     actionmenu.add_separator()
 
     gb['detector']=StringVar()
-    gb['detector'].set('engzee')
+    gb['detector'].set('neurokit') # default value
     # To understand what these detectors mean, see https://github.com/berndporr/py-ecg-detectors
     for detect in ['neurokit',
                    # ECG-Detectors
