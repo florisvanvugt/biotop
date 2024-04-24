@@ -104,7 +104,31 @@ def find_valid_between(tmin,tmax):
     return valids
 
 
-            
+
+
+
+def clear_artefacts_here():
+    """ Clear all markings of artefactual regions
+    in the time range currently visible in the window."""
+
+    drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
+    gb['invalid'] = [ (s,t0,t1) for (s,t0,t1) in gb['invalid']
+                      if s!=gb['channel'] or not does_overlap((t0,t1),drawrange) ]
+                      
+    redraw_all()
+
+
+
+def next_artefact():
+    """ Move the window to show the next artefact region. """
+    endt = gb['tstart']+gb['WINDOW_T']
+    invalt = [ t for (s,t,_) in gb['invalid'] if s==gb['channel'] and t>endt ]
+    if len(invalt):
+        nextt = np.min(invalt)
+        move_window_to(nextt) # move that to the center of the screen
+        
+    
+    
 
 
 def clear_peaks():
@@ -115,6 +139,7 @@ def clear_peaks():
     else:
         answer = True
     if answer:
+        
         gb['peaks']=[] # remove everything!!
         redraw_all()
 
@@ -715,6 +740,9 @@ def back_in_time(e=None):
     redraw_all()
 
 def forward_in_time(e=None):
+    print(gb['tstart'])
+    print(gb['WINDOW_SHIFT_T'])
+    print(gb['WINDOW_T'])
     gb['tstart']+=gb['WINDOW_SHIFT_T']*gb['WINDOW_T']
     redraw_all()
     
@@ -741,17 +769,22 @@ WINDOW_CHANGE_FACTOR = 1.25
 
 
 def restore_t(t_target,prop):
-    # Return what window edge (left window edge) you need to
-    # get the time t at the given proportion of the width.
-    # I know, sounds complicated...
+    """
+    Return what window edge (left window edge) you need to
+    get the time t at the given proportion of the width.
+    I know, sounds complicated... 
+    Basically, restore_t(t,.5) tells you what the
+    start time of the current window would need to be for t to end up in the middle
+    of the window (at the current zoom level)
+    """
     #print("Prop {} Window {} T-target {}".format(prop,gb['WINDOW_T'],t_target))
     tstart = t_target- prop*gb['WINDOW_T']
-    #print(tstart)
     return tstart
 
 
 def move_window_to(t,zoom=None):
-    if zoom:
+    """ Move the current view window so that t sits right in the center """
+    if not (zoom is None):
         gb['WINDOW_T']=zoom
     gb['tstart']= restore_t(t,.5) # move that to the center of the screen
     update_window_definitions()
@@ -1284,7 +1317,7 @@ def accept_search():
 
     
 def clear_candidates():
-    
+    """ Clear candidate time points that seemed to resemble the template """
     drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
     tmin,tmax = drawrange
     gb['peaks'] = [ p for p in gb['peaks'] if p['source']!='candidate']
@@ -1631,6 +1664,9 @@ def main():
 
 
 
+
+    """ Create the window menu bar """ 
+
     menubar = Menu(root)
 
     filemenu = Menu(menubar, tearoff=0)
@@ -1681,6 +1717,25 @@ def main():
     menubar.add_cascade(label="Peaks", menu=actionmenu)
 
 
+
+    tempmenu = Menu(menubar, tearoff=0)
+    tempmenu.add_command(label="Make template",command=capture_erp)
+    tempmenu.add_command(label="Search",command=search_template)
+    tempmenu.add_command(label="Accept candidates",command=accept_search)
+    tempmenu.add_command(label="Clear candidates",command=clear_candidates)
+    menubar.add_cascade(label="Template", menu=tempmenu)
+
+
+
+
+    artmenu = Menu(menubar, tearoff=0)
+    artmenu.add_command(label="Clear here",command=clear_artefacts_here)
+    artmenu.add_command(label="Show next", command=next_artefact)
+    menubar.add_cascade(label="Artefacts", menu=artmenu)
+    
+
+
+
     viewmenu = Menu(menubar, tearoff=0)
     viewmenu.add_command(label="All",command=zoom_all)
     viewmenu.add_separator()
@@ -1694,14 +1749,6 @@ def main():
                             command=lambda x=dpi: set_dpi(x) )
     viewmenu.add_cascade(label="Set DPI", menu=dpimenu)
     menubar.add_cascade(label="View", menu=viewmenu)
-
-
-    tempmenu = Menu(menubar, tearoff=0)
-    tempmenu.add_command(label="Make template",command=capture_erp)
-    tempmenu.add_command(label="Search",command=search_template)
-    tempmenu.add_command(label="Accept candidates",command=accept_search)
-    tempmenu.add_command(label="Clear candidates",command=clear_candidates)
-    menubar.add_cascade(label="Template", menu=tempmenu)
 
 
     

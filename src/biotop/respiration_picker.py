@@ -169,6 +169,38 @@ def clear_peaks_in_range(tmin,tmax):
 
 
 
+
+
+
+def clear_artefacts_here():
+    """ Clear all markings of artefactual regions
+    in the time range currently visible in the window."""
+
+    drawrange = (gb['tstart'],gb['tstart']+gb['WINDOW_T'])
+    gb['invalid'] = [ (s,t0,t1) for (s,t0,t1) in gb['invalid']
+                      if s!=gb['channel'] or not does_overlap((t0,t1),drawrange) ]
+                      
+    redraw_all()
+
+
+
+def next_artefact():
+    """ Move the window to show the next artefact region. """
+    endt = gb['tstart']+gb['WINDOW_T']
+    invalt = [ t for (s,t,_) in gb['invalid'] if s==gb['channel'] and t>endt ]
+    if len(invalt):
+        nextt = np.min(invalt)
+        move_window_to(nextt) # move that to the center of the screen
+        
+    
+    
+
+
+
+
+    
+
+
 def strip_sample(pks):
     # Strip information from the peaks objects that we can reproduce easily when we reload
     ret = []
@@ -262,6 +294,16 @@ def build_gui(root):
     menubar.add_cascade(label="Peaks", menu=actionmenu)
 
 
+
+
+    artmenu = Menu(menubar, tearoff=0)
+    artmenu.add_command(label="Clear here",command=clear_artefacts_here)
+    artmenu.add_command(label="Show next", command=next_artefact)
+    menubar.add_cascade(label="Artefacts", menu=artmenu)
+
+    
+
+    
     viewmenu = Menu(menubar, tearoff=0)
     viewmenu.add_command(label="All",command=zoom_all)
     viewmenu.add_separator()
@@ -982,7 +1024,17 @@ def update_window_definitions():
     nwind = get_n_windows()
     gb['slider'].configure(to=nwind)
     
+def move_window_to(t,zoom=None):
+    """ Move the current view window so that t sits right in the center """
+    if not (zoom is None):
+        gb['WINDOW_T']=zoom
+    gb['tstart']= restore_t(t,.5) # move that to the center of the screen
+    update_window_definitions()
+    redraw_all()
 
+
+
+    
 # Globals to carry around
 gb = {}
 
