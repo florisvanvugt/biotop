@@ -1468,20 +1468,14 @@ def main():
     ##
     ##
 
+    import biobabel as bb
+
     fname = None
     if len(sys.argv)>1:
         fname = sys.argv[1]
     else:
 
-        filetypes = (
-            ('HDF5 dataset', '*.hdf5'),
-            ('All files', '*.*')
-        )
-
-        fname = fd.askopenfilename(
-            title='Select your recording',
-            initialdir='.',
-            filetypes=filetypes)
+        fname = bb.ask_bio_file()
 
     if not fname:
         print("You need to select a file. Exiting now.")
@@ -1507,13 +1501,7 @@ def main():
     ### Read the data
     ###
     print("Opening file {}".format(fname))
-
-    import biobabel as bb
-    #from hdphysio5 import read_h5py
-    # Submodule, load from https://github.com/florisvanvugt/hdphysio5
-
     bio       = bb.load(fname)
-
     bio.print()
 
 
