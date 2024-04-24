@@ -740,9 +740,6 @@ def back_in_time(e=None):
     redraw_all()
 
 def forward_in_time(e=None):
-    print(gb['tstart'])
-    print(gb['WINDOW_SHIFT_T'])
-    print(gb['WINDOW_T'])
     gb['tstart']+=gb['WINDOW_SHIFT_T']*gb['WINDOW_T']
     redraw_all()
     
