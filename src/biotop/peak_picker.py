@@ -1024,22 +1024,28 @@ def redraw():
     AUTOSCALE = False #False # whether to use the matplotlib default scale
     if not AUTOSCALE:
 
-        ## Remove the "invalid" portions of the signal too
+        ## Determine "manually" what our scale limits should be
+        
         sig      = ecg[tsels]
+        orig = np.array(sig).copy()
         tselspec = plot_t[tsels]
         
         for (s,t0,t1) in gb['invalid']:
             if s==gb['channel']:
                 sig[ (tselspec>=t0) & (tselspec<=t1) ] = np.nan
-                #tselspec = tselspec & ((plot_t<t0)|(plot_t>t1))
-        sig = sig[~np.isnan(sig)] # finally truly remove them
+        oksig = ~np.isnan(sig)
+        sig = sig[oksig] # finally truly remove them
+        if not sum(oksig):
+            sig = orig[ ~np.isnan(orig) ]
+
+        mn,mx=-1,1 # default
         if len(sig):
-            mn,mx = np.min(sig),np.max(sig)
+            mn,mx = np.nanmin(sig),np.nanmax(sig)
             # add some padding on the sides
-            pad = .05*(mx-mn)
-            ax.set_ylim(mn-pad,mx+pad)
-        else:
-            ax.set_ylim(-1,1)
+        if mn==mx:
+            mn,mx=.95*mn,1.05*mx
+        pad = .05*(mx-mn)
+        ax.set_ylim(mn-pad,mx+pad)
     
     #ax.set_xlim(gb['tstart'],gb['tstart']+WINDOW_T)
     update_axes()
