@@ -1445,6 +1445,10 @@ NEUROKIT2_CLEANERS = ['biosppy', 'pantompkins1985', 'hamilton2002', 'elgendi2010
 def refilter():
 
     signal_pre = gb['raw'] # Always start from the raw signal
+
+
+    if gb['signal_invert'].get(): # If inverting the signal
+        signal_pre = -signal_pre
     
     # Also make a filtered version
     for nkproc in NEUROKIT2_CLEANERS:
@@ -1682,6 +1686,11 @@ def main():
     
     prepmenu = Menu(menubar, tearoff=0)
 
+    gb['signal_invert'] = BooleanVar()
+    gb['signal_invert'].set(False)
+    prepmenu.add_checkbutton(label="Invert", onvalue=1, offvalue=0, variable=gb['signal_invert'], command=update_filter)
+    prepmenu.add_separator()
+    
     gb['heartpy_wander_remov'] = BooleanVar()
     gb['heartpy_wander_remov'].set(True)
     prepmenu.add_checkbutton(label="Baseline wander removal", onvalue=1, offvalue=0, variable=gb['heartpy_wander_remov'], command=update_filter)
