@@ -2,7 +2,7 @@
 
 name = "biotop"
 
-version = "0.5.2"
+dynamic = ["version"]
 
 description = "Semi-automated extrema detection in ECG and respiratory signals"
 
@@ -33,6 +33,10 @@ dependencies = [
  "biobabel",
  "heartpy"
 ]
+
+
+[tool.setuptools.dynamic]
+version = {attr = "biotop.__version__"}
 
 
 [project.urls]

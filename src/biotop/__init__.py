@@ -1,3 +1,5 @@
+__version__ = "0.5.3"
+
 
 from biotop import peak_picker
 from biotop import respiration_picker
