@@ -77,4 +77,6 @@ pip install --upgrade "biotop @ git+https://github.com/florisvanvugt/biotop"
 
 - [x] Show a window when waiting for peak autodetection to complete
 - [ ] Make sure y axis labels remain visible even for greater zoom
+- [ ] Merge the different scripts into a single one with multiple modes (ECG, PPG, respiration).
+
 
