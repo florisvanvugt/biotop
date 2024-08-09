@@ -40,7 +40,13 @@ gb = {}
 
 
 
+# Define the mode we're working in, either ECG or PPG for now.
+MODE_ECG = 1
+MODE_PPG = 2
 
+def mode_is(m):
+    """ Check whether the current mode equals what is given in the argument """
+    return gb.get('mode',0)==m
 
 
 
@@ -69,18 +75,40 @@ def do_auto_detect_peaks():
         samp_min = int(round(fromt*gb['SR'])) # calculate what sample the starting point corresponds to
         ecg = gb['signal'][tsels]
 
-        peaks = preprocess_ecg.peak_detect(ecg,gb['SR'],gb['detector'].get())
-        gb['peaks'] += [
-            {
-                'i':samp+samp_min,
-                't':(samp+samp_min)/gb['SR'],
-                'valid':True,
-                'source':'auto',
-                'edited':False,
-                'y':ecg[samp]
-            } for samp in peaks
-        ]
+        if mode_is(MODE_ECG):
+        
+            peaks = preprocess_ecg.peak_detect(ecg,gb['SR'],gb['detector'].get())
+            gb['peaks'] += [
+                {
+                    'i':samp+samp_min,
+                    't':(samp+samp_min)/gb['SR'],
+                    'valid':True,
+                    'source':'auto',
+                    'edited':False,
+                    'y':ecg[samp]
+                } for samp in peaks
+            ]
 
+        if mode_is(MODE_PPG):
+
+            peaks = neurokit2.ppg_findpeaks(
+                ecg, # I know I know, it's not actually an ECG signal in this case
+                sampling_rate=gb['SR'],
+                method=gb['detector'].get(),
+                show=False)
+
+            gb['peaks'] += [
+                {
+                    'i':samp+samp_min,
+                    't':(samp+samp_min)/gb['SR'],
+                    'valid':True,
+                    'source':'auto',
+                    'edited':False,
+                    'y':ecg[samp]
+                } for samp in peaks['PPG_Peaks']
+            ]
+
+            #print(peaks)
 
 
 from biotop.misc import chop_away
@@ -1451,26 +1479,36 @@ def refilter():
         signal_pre = -signal_pre
     
     # Also make a filtered version
-    for nkproc in NEUROKIT2_CLEANERS:
+    if mode_is(MODE_ECG):
+    
+        for nkproc in NEUROKIT2_CLEANERS:
+            nm = 'neurokit2-{}'.format(nkproc)
+            if gb[nm].get():
+                METHOD=nkproc
+                print("Filtering ECG signal using {} procedure in neurokit2".format(METHOD))
+                signal_pre = neurokit2.ecg_clean(signal_pre,sampling_rate=gb['SR'],method=METHOD)
 
-        nm = 'neurokit2-{}'.format(nkproc)
-        if gb[nm].get():
-            METHOD=nkproc
-            print("Filtering ECG signal using {} procedure in neurokit2".format(METHOD))
-            signal_pre = neurokit2.ecg_clean(signal_pre,sampling_rate=gb['SR'],method=METHOD)
+        signal_flt = signal_pre
+        if gb['heartpy_wander_remov'].get():
+            ##print(signal_pre)
+            signal_flt = heartpy.remove_baseline_wander(signal_pre,gb['SR'])
+            ##print("Baseline wander removal")
+            ##print(signal_flt)
+            prop_ok = np.mean(~np.isnan(signal_flt))
+            ##print(prop_ok)
+            if prop_ok<.5: # if there is not enough signal left
+                signal_flt = signal_pre # restore signal before baseline wander correction
 
-    signal_flt = signal_pre
-    if gb['heartpy_wander_remov'].get():
-        ##print(signal_pre)
-        signal_flt = heartpy.remove_baseline_wander(signal_pre,gb['SR'])
-        ##print("Baseline wander removal")
-        ##print(signal_flt)
-        prop_ok = np.mean(~np.isnan(signal_flt))
-        ##print(prop_ok)
-        if prop_ok<.5: # if there is not enough signal left
-            signal_flt = signal_pre # restore signal before baseline wander correction
+        gb['signal']=signal_flt
 
-    gb['signal']=signal_flt
+    if mode_is(MODE_PPG):
+        ### PPG mode
+        gb['signal']=signal_pre
+
+        if gb['preprocess-elgendi'].get():
+            gb['signal'] = neurokit2.ppg_clean(signal_pre, method='elgendi')
+
+        
 
     for p in gb['peaks']:
         p['y']=get_signal_at_t(p['t'])#biodata.bio[ gb['ecg-prep-column'] ][p['i']]
@@ -1551,12 +1589,17 @@ def main():
         # Assuming that that is a stream in the dataset
     else:
 
-        fields = bio.find_channels({'modality':'ecg'})
-        if not len(fields):
-            fields = bio.find_channels()
-        if not len(fields): # If there are still no fields
+        allfields = bio.find_channels()
+        if not len(allfields): # If there are no fields at all
             print("No channels found... exiting.")
             sys.exit(-1)
+
+        # Ok, we have some channels... can we find specific ECG or PPG channels?
+        fieldsECG = bio.find_channels({'modality':'ecg'})
+        fieldsPPG = bio.find_channels({'modality':'ppg'})
+        fields = fieldsECG+fieldsPPG
+        if not len(fields):
+            fields = allfields
             
         fields.sort()
         if len(fields)>1:
@@ -1577,14 +1620,18 @@ def main():
     gb['SR']=hdr['sampling_frequency']
     gb['hdr']=hdr
 
+    gb['mode']=MODE_ECG
+    if hdr.get('modality','').lower()=='ecg':
+        gb['mode']=MODE_ECG
+        print("Entering ECG mode")
+    if hdr.get('modality','').lower()=='ppg':
+        gb['mode']=MODE_PPG
+        print("Entering PPG mode")
+    
+
         
-    #sos = butter(15, 3, 'low', fs=gb['SR'], output='sos')
-    #filtd = signal.sosfiltfilt(sos, dat)
-    #gb['filtered']=filtd
     gb['raw']=dat.copy()
     gb['signal']=dat.copy()
-
-    ##print(gb['signal'])
 
 
     # See if there is an existing peak file
@@ -1690,36 +1737,61 @@ def main():
     gb['signal_invert'].set(False)
     prepmenu.add_checkbutton(label="Invert", onvalue=1, offvalue=0, variable=gb['signal_invert'], command=update_filter)
     prepmenu.add_separator()
-    
-    gb['heartpy_wander_remov'] = BooleanVar()
-    gb['heartpy_wander_remov'].set(True)
-    prepmenu.add_checkbutton(label="Baseline wander removal", onvalue=1, offvalue=0, variable=gb['heartpy_wander_remov'], command=update_filter)
-    prepmenu.add_separator()
-    
-    for nkproc in NEUROKIT2_CLEANERS:
 
-        nm = 'neurokit2-{}'.format(nkproc)
-        gb[nm] = BooleanVar()
-        gb[nm].set(False)
-        prepmenu.add_checkbutton(label="Neurokit2 {}".format(nkproc),
-                                 onvalue=1, offvalue=0, variable=gb[nm],
-                                 command=update_filter)
+    if mode_is(MODE_ECG):
     
+        gb['heartpy_wander_remov'] = BooleanVar()
+        gb['heartpy_wander_remov'].set(True)
+        prepmenu.add_checkbutton(label="Baseline wander removal", onvalue=1, offvalue=0, variable=gb['heartpy_wander_remov'], command=update_filter)
+        prepmenu.add_separator()
+
+        for nkproc in NEUROKIT2_CLEANERS:
+
+            nm = 'neurokit2-{}'.format(nkproc)
+            gb[nm] = BooleanVar()
+            gb[nm].set(False)
+            prepmenu.add_checkbutton(label="Neurokit2 {}".format(nkproc),
+                                     onvalue=1, offvalue=0, variable=gb[nm],
+                                     command=update_filter)
+
+    if mode_is(MODE_PPG):
+
+        nm = 'preprocess-elgendi'
+        gb[nm]=BooleanVar()
+        gb[nm].set(True)
+        prepmenu.add_checkbutton(
+            label="Neurokit2 elgendi",
+            onvalue=1, offvalue=0, variable=gb[nm],
+            command=update_filter)
+        
+
+            
     menubar.add_cascade(label="Preprocessing", menu=prepmenu)
-    
+
     actionmenu = Menu(menubar, tearoff=0)
 
     actionmenu.add_command(label="Auto detect",command=auto_detect_peaks)
     actionmenu.add_separator()
 
-    gb['detector']=StringVar()
-    gb['detector'].set('neurokit') # default value
-    # To understand what these detectors mean, see https://github.com/berndporr/py-ecg-detectors
-    for detect in ['neurokit',
-                   # ECG-Detectors
-                   'hamilton','christov','engzee','pan_tompkins','swt','two_average','matched_filter','wqrs']:
-        actionmenu.add_radiobutton(label='{} detector'.format(detect), variable=gb['detector'], value=detect)
+    if mode_is(MODE_ECG):
     
+        gb['detector']=StringVar()
+        gb['detector'].set('neurokit') # default value
+        # To understand what these detectors mean, see https://github.com/berndporr/py-ecg-detectors
+        for detect in ['neurokit',
+                       # ECG-Detectors
+                       'hamilton','christov','engzee','pan_tompkins','swt','two_average','matched_filter','wqrs']:
+            actionmenu.add_radiobutton(label='{} detector'.format(detect), variable=gb['detector'], value=detect)
+
+    if mode_is(MODE_PPG):
+
+        gb['detector']=StringVar()
+        gb['detector'].set('elgendi') # default value
+        # To understand what these detectors mean, see https://github.com/berndporr/py-ecg-detectors
+        for detect in ['elgendi','bishop']:
+            actionmenu.add_radiobutton(label='neurokit2 {} detector'.format(detect), variable=gb['detector'], value=detect)
+
+            
     actionmenu.add_separator()
     
     actionmenu.add_command(label="Clear all",command=clear_peaks)
