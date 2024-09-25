@@ -310,7 +310,7 @@ PEAK_EDIT_MAX_WINDOW_T = 2 # the maximum window size that allows peak adjusting/
 
 def find_closest_peak(t):
     dts = [ t-peak['t'] for peak in gb['peaks'] ]
-    if not len(dts): return None,{"t":np.Inf}
+    if not len(dts): return None,{"t":np.inf}
     min_dt = min([ abs(d) for d in dts ])
     for i,peak in enumerate(gb['peaks']):
         dt = t-peak['t']
@@ -669,7 +669,7 @@ def get_valid_RR_intervals(trange=None):
     if trange:
         tmin,tmax= trange
     else:
-        tmin,tmax= -np.Inf, np.Inf
+        tmin,tmax= -np.inf, np.inf
 
     rrs = []
     validpeaks = [ p for p in gb['peaks'] if p['valid'] ] # Take only the valid peaks

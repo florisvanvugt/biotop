@@ -79,4 +79,5 @@ pip install --upgrade "biotop @ git+https://github.com/florisvanvugt/biotop"
 - [ ] Make sure y axis labels remain visible even for greater zoom
 - [ ] Merge the different scripts into a single one with multiple modes (ECG, PPG, respiration).
 
+- [ ] Bug fixing: sometimes artefact intervals *are* overlapping whereas they should be S01-tapping3 Cardiotap.
 

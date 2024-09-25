@@ -151,7 +151,7 @@ def do_auto_detect_peaks():
     
 
 def clear_peaks():
-    clear_peaks_in_range(-np.Inf,np.Inf)
+    clear_peaks_in_range(-np.inf,np.inf)
 
 
 def clear_peaks_here():
@@ -573,7 +573,7 @@ PEAK_EDIT_MAX_WINDOW_T = 8 # the maximum window size that allows peak adjusting/
 
 def find_closest_peak(t):
     dts = [ t-peak['t'] for peak in gb['peaks'] ]
-    if not len(dts): return None,{"t":np.Inf}
+    if not len(dts): return None,{"t":np.inf}
     min_dt = min([ abs(d) for d in dts ])
     for i,peak in enumerate(gb['peaks']):
         dt = t-peak['t']
@@ -863,7 +863,7 @@ def get_valid_intervals(trange=None):
     if trange:
         tmin,tmax= trange
     else:
-        tmin,tmax= -np.Inf, np.Inf
+        tmin,tmax= -np.inf, np.inf
 
     # Peak-to-trough and trough-to-peak
     validpeaks = [ p for p in gb['peaks'] if p['valid'] ] # Take only the valid peaks
