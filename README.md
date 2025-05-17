@@ -90,7 +90,6 @@ pip install --upgrade "biotop @ git+https://github.com/florisvanvugt/biotop"
 
 If you use this work, please add the appropriate citation:
 
-```
-van Vugt, F.T. (2025). Biotop: Graphical user interface to combine automated and manual analysis of physiological signals. https://doi.org/10.5281/zenodo.15453370
-```
+  * van Vugt, F.T. (2025). Biotop: Graphical user interface to combine automated and manual analysis of physiological signals. https://doi.org/10.5281/zenodo.15453370
+
 
