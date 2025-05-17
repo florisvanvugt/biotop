@@ -1,5 +1,7 @@
 # biotop: picking peaks in physiological data 
 
+[![DOI](https://zenodo.org/badge/618577784.svg)](https://zenodo.org/badge/latestdoi/618577784)
+
 A simple GUI for human-assisted semiautomatic ECG and respiration preprocessing.
 
 **Purpose** ECG analysis of real-world data can be tricky, especially when there are lots of artefacts.
@@ -80,4 +82,15 @@ pip install --upgrade "biotop @ git+https://github.com/florisvanvugt/biotop"
 - [ ] Merge the different scripts into a single one with multiple modes (ECG, PPG, respiration).
 
 - [ ] Bug fixing: sometimes artefact intervals *are* overlapping whereas they should be S01-tapping3 Cardiotap.
+
+
+
+
+# Citation
+
+If you use this work, please add the appropriate citation:
+
+```
+van Vugt, F.T. (2025). Biotop: Graphical user interface to combine automated and manual analysis of physiological signals. https://doi.org/10.5281/zenodo.15453370
+```
 
